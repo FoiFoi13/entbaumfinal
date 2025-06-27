@@ -40,3 +40,139 @@
 .read-the-docs {
   color: #888;
 }
+
+.start-button {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  box-sizing: border-box;
+  padding: 12px 20px; /* Standardisiertes, gleichmäßiges Padding */
+  font-size: 1rem; /* Konsistente Schriftgröße */
+  text-align: center; /* Zusätzliche Absicherung für Textzentrierung */
+  border-radius: 8px;
+  border: none;
+  color: white;
+  font-weight: bold;
+  cursor: pointer;
+  position: relative;
+  overflow: hidden;
+  transition: background-color 0.3s ease;
+  /* height und line-height entfernt, um Flexbox-Zentrierung nicht zu behindern */
+}
+
+.start-button::before {
+  content: '';
+  position: absolute;
+  top: var(--y);
+  left: var(--x);
+  width: 0;
+  height: 0;
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 50%;
+  transform: translate(-50%, -50%);
+  opacity: 0;
+  transition: width 0.5s ease, height 0.5s ease, opacity 0.5s ease;
+}
+
+.start-button:active::before {
+  width: 200%;
+  height: 200%;
+  opacity: 1;
+}
+
+.answer-button {
+  background-color: #34495E; /* Dark blue-gray */
+  color: white;
+  box-sizing: border-box; /* Include padding and border in the element's total width and height */
+  padding: 12px 20px; /* Standardisiertes, gleichmäßiges Padding */
+  font-size: 1rem;
+  font-weight: 600;
+  text-align: center; /* Zusätzliche Absicherung für Textzentrierung */
+  border-radius: 8px;
+  border: none;
+  cursor: pointer;
+  transition: background-color 0.2s ease-in-out;
+  width: 100%; /* Ensure buttons take full width */
+
+  display: flex;
+  justify-content: center;
+  align-items: center;
+
+  position: relative; /* For ripple effect */
+  overflow: hidden; /* For ripple effect */
+}
+
+.answer-button::before {
+  content: '';
+  position: absolute;
+  top: var(--y);
+  left: var(--x);
+  width: 0;
+  height: 0;
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 50%;
+  transform: translate(-50%, -50%);
+  opacity: 0;
+  transition: width 0.5s ease, height 0.5s ease, opacity 0.5s ease;
+}
+
+.answer-button:active::before {
+  width: 200%;
+  height: 200%;
+  opacity: 1;
+}
+
+
+.main-app-container {
+    max-width: 960px;
+    margin: 0 auto;
+    padding: 20px;
+    background-color: #2C3E50; /* Slightly lighter dark blue */
+    border-radius: 12px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+    color: #ECF0F1; /* Light gray for general text */
+    font-family: 'Arial', sans-serif;
+}
+
+.introduction-screen h1 {
+    font-size: 2.5rem;
+    color: #3498DB; /* Blue for main heading */
+    margin-bottom: 20px;
+}
+
+.introduction-screen h2 {
+    font-size: 1.8rem;
+    color: #5DADE2; /* Lighter blue */
+    margin-bottom: 15px;
+}
+
+.introduction-screen p {
+    font-size: 1.1rem;
+    line-height: 1.6;
+    margin-bottom: 20px;
+}
+
+.content-box {
+    background-color: #34495E; /* Dark blue-gray for content boxes */
+    padding: 25px;
+    border-radius: 10px;
+    box-shadow: inset 0 2px 5px rgba(0, 0, 0, 0.2);
+}
+
+.result-box {
+    background-color: #34495E; /* Dark blue-gray for result box */
+    padding: 25px;
+    border-radius: 10px;
+    box-shadow: inset 0 2px 5px rgba(0, 0, 0, 0.2);
+}
+
+/* Styling for react-leaflet map links */
+.leaflet-popup-content a {
+    color: #3498DB !important; /* Blue for links */
+    text-decoration: none;
+    font-weight: bold;
+}
+
+.leaflet-popup-content a:hover {
+    text-decoration: underline;
+}

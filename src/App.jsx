@@ -1,4 +1,6 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
+import { useWindowSize } from 'react-use';
+import Confetti from 'react-confetti';
 // Import html5-qrcode
 import { Html5QrcodeScanner } from 'html5-qrcode';
 // Import Leaflet CSS directly
@@ -16,115 +18,201 @@ import DecisionTreeFlow from './DecisionTreeFlow';
 delete L.Icon.Default.prototype._getIconUrl;
 
 L.Icon.Default.mergeOptions({
-  iconRetinaUrl: markerIcon2x,
-  iconUrl: markerIcon,
-  shadowUrl: markerShadow,
+    iconRetinaUrl: markerIcon2x,
+    iconUrl: markerIcon,
+    shadowUrl: markerShadow,
 });
 // --- End Leaflet Icon Fix ---
 
-// --- Decision Tree Data ---
+// --- Location constant for OFFIS ---
+const offisLocation = { name: 'OFFIS Institut für Informatik', coords: [53.148881112034466, 8.200026064858008] };
+
+// --- FINAL Decision Tree with conditional map display ---
 const decisionTree = {
-  start: {
-    id: 'start',
-    question: 'Willkommen zur Umwelt-Rallye Oldenburg! Möchtest du mehr über Bäume oder Müllvermeidung lernen?',
-    flowLabel: 'Start: Thema wählen',
-    isEnd: false,
-    location: null,
-    qrCode: null,
-    answers: [
-      { text: 'Bäume!', nextNodeId: 'trees_1' },
-      { text: 'Müllvermeidung!', nextNodeId: 'waste_1' },
-    ],
-    resultText: null,
-  },
-  trees_1: {
-    id: 'trees_1',
-    question: 'Super! Gehe zum Alten Stadthafen. Dort gibt es ein Projekt zur Uferbepflanzung. Finde den QR-Code am Info-Schild.',
-    flowLabel: 'Bäume: Stadthafen',
-    isEnd: false,
-    location: { name: 'Alter Stadthafen (Uferbepflanzung)', coords: [53.1484, 8.2145] },
-    qrCode: 'QR_STADTHAFEN_TREES',
-    answers: null,
-    resultText: null,
-    nextNodeOnScan: 'trees_2'
-  },
-  waste_1: {
-    id: 'waste_1',
-    question: 'Interessant! Besuche den Unverpacktladen in der Innenstadt. Dort lernst du, wie man Verpackungsmüll reduziert. Finde den QR-Code im Schaufenster.',
-    flowLabel: 'Müll: Unverpacktladen',
-    isEnd: false,
-    location: { name: 'Unverpacktladen', coords: [53.1435, 8.214] },
-    qrCode: 'QR_UNVERPACKT_WASTE',
-    answers: null,
-    resultText: null,
-    nextNodeOnScan: 'waste_2'
-  },
-  trees_2: {
-    id: 'trees_2',
-    question: 'Gut gemacht! Diese Bäume helfen, die Luftqualität zu verbessern. Möchtest du nun etwas über Stadtgärten oder Insektenhotels erfahren?',
-    flowLabel: 'Bäume: Nächste Wahl',
-    isEnd: false,
-    location: null,
-    qrCode: null,
-    answers: [
-        { text: 'Stadtgärten', nextNodeId: 'trees_end_garden' },
-        { text: 'Insektenhotels', nextNodeId: 'trees_end_insects' },
-    ],
-    resultText: null,
-  },
-  waste_2: {
-    id: 'waste_2',
-    question: 'Klasse! Unverpackt einkaufen ist ein wichtiger Schritt. Willst du als Nächstes mehr über Recycling oder Kompostierung lernen?',
-    flowLabel: 'Müll: Nächste Wahl',
-    isEnd: false,
-    location: null,
-    qrCode: null,
-    answers: [
-        { text: 'Recycling', nextNodeId: 'waste_end_recycling' },
-        { text: 'Kompostierung', nextNodeId: 'waste_end_compost' },
-    ],
-    resultText: null,
-  },
-  trees_end_garden: {
-    id: 'trees_end_garden',
-    question: null,
-    flowLabel: 'Ziel: Stadtgärten',
-    isEnd: true,
-    location: null,
-    qrCode: null,
-    answers: null,
-    resultText: 'Super! Du hast den Pfad "Bäume -> Stadtgärten" gewählt. Stadtgärten bringen Grün in die Stadt und fördern die Gemeinschaft.',
-  },
-  trees_end_insects: {
-    id: 'trees_end_insects',
-    question: null,
-    flowLabel: 'Ziel: Insektenhotels',
-    isEnd: true,
-    location: null,
-    qrCode: null,
-    answers: null,
-    resultText: 'Toll! Du hast den Pfad "Bäume -> Insektenhotels" gewählt. Insektenhotels bieten wichtigen Lebensraum für Nützlinge.',
-  },
-  waste_end_recycling: {
-    id: 'waste_end_recycling',
-    question: null,
-    flowLabel: 'Ziel: Recycling',
-    isEnd: true,
-    location: null,
-    qrCode: null,
-    answers: null,
-    resultText: 'Prima! Du hast den Pfad "Müllvermeidung -> Recycling" gewählt. Richtiges Recycling schont Ressourcen.',
-  },
-  waste_end_compost: {
-    id: 'waste_end_compost',
-    question: null,
-    flowLabel: 'Ziel: Kompostierung',
-    isEnd: true,
-    location: null,
-    qrCode: null,
-    answers: null,
-    resultText: 'Sehr gut! Du hast den Pfad "Müllvermeidung -> Kompostierung" gewählt. Kompostierung verwandelt Bioabfall in wertvollen Dünger.',
-  },
+    // START
+    start: {
+        id: 'start',
+        question: 'Willkommen zur OFFIS-Entdeckertour! Bitte gehe zum Haupteingang und scanne den QR-Code, um zu beginnen.',
+        flowLabel: 'Start @ OFFIS',
+        isEnd: false,
+        location: offisLocation, // Show map at start
+        qrCode: 'OFFIS_START_2024',
+        answers: null,
+        nextNodeOnScan: 'q1_question'
+    },
+    // --- PATH 1: First Question ---
+    q1_question: {
+        id: 'q1_question',
+        question: 'Was interessiert dich mehr?',
+        flowLabel: 'Frage 1: Interesse',
+        isEnd: false,
+        location: null, // No map for question
+        qrCode: null,
+        answers: [
+            { text: 'Technik und Strom', nextNodeId: 'q1_scan_tech' },
+            { text: 'Menschen und ihr Alltag', nextNodeId: 'q1_scan_mensch' },
+        ],
+    },
+    q1_scan_tech: {
+        id: 'q1_scan_tech',
+        question: 'Gute Wahl! Scanne nun den QR-Code für den Bereich "Technik".',
+        flowLabel: 'Scan: Technik',
+        isEnd: false,
+        location: offisLocation, // Show map for scan
+        qrCode: 'Q1_TECHNIK',
+        answers: null,
+        nextNodeOnScan: 'q2_1_question'
+    },
+    q1_scan_mensch: {
+        id: 'q1_scan_mensch',
+        question: 'Interessant! Scanne nun den QR-Code für den Bereich "Mensch".',
+        flowLabel: 'Scan: Mensch',
+        isEnd: false,
+        location: offisLocation, // Show map for scan
+        qrCode: 'Q1_MENSCH',
+        answers: null,
+        nextNodeOnScan: 'q2_2_question'
+    },
+    // --- PATH 2.1: Technik -> Arbeitsweise ---
+    q2_1_question: {
+        id: 'q2_1_question',
+        question: 'Woran arbeitest du am liebsten?',
+        flowLabel: 'Frage 2 (Technik)',
+        isEnd: false,
+        location: null, // No map for question
+        qrCode: null,
+        answers: [
+            { text: 'Ich tüftle gern an Maschinen oder Software', nextNodeId: 'q2_scan_tueftler' },
+            { text: 'Ich plane gern Systeme, Netzwerke oder Prozesse', nextNodeId: 'q2_scan_planer' },
+        ],
+    },
+    q2_scan_tueftler: {
+        id: 'q2_scan_tueftler',
+        question: 'Verstanden, du bist ein Tüftler! Scanne den nächsten QR-Code.',
+        flowLabel: 'Scan: Tüftler',
+        isEnd: false,
+        location: offisLocation, // Show map for scan
+        qrCode: 'Q2_TUEFTLER',
+        answers: null,
+        nextNodeOnScan: 'q3_1_1_question'
+    },
+    q2_scan_planer: {
+        id: 'q2_scan_planer',
+        question: 'Verstanden, du bist ein Planer! Scanne den nächsten QR-Code.',
+        flowLabel: 'Scan: Planer',
+        isEnd: false,
+        location: offisLocation, // Show map for scan
+        qrCode: 'Q2_PLANER',
+        answers: null,
+        nextNodeOnScan: 'q3_1_2_question'
+    },
+    // --- PATH 2.2: Mensch -> Arbeitsweise ---
+    q2_2_question: {
+        id: 'q2_2_question',
+        question: 'Woran arbeitest du am liebsten?',
+        flowLabel: 'Frage 2 (Mensch)',
+        isEnd: false,
+        location: null, // No map for question
+        qrCode: null,
+        answers: [
+            { text: 'Ich will helfen, das Leben älterer oder kranker Menschen zu verbessern', nextNodeId: 'q2_scan_helfer' },
+            { text: 'Ich interessiere mich für die Auswirkungen von Digitalisierung auf die Gesellschaft', nextNodeId: 'q2_scan_forscher' },
+        ],
+    },
+    q2_scan_helfer: {
+        id: 'q2_scan_helfer',
+        question: 'Eine wichtige Aufgabe! Scanne den nächsten QR-Code.',
+        flowLabel: 'Scan: Helfer',
+        isEnd: false,
+        location: offisLocation, // Show map for scan
+        qrCode: 'Q2_HELFER',
+        answers: null,
+        nextNodeOnScan: 'q3_2_1_question'
+    },
+    q2_scan_forscher: {
+        id: 'q2_scan_forscher',
+        question: 'Ein spannendes Feld! Scanne den nächsten QR-Code.',
+        flowLabel: 'Scan: Forscher',
+        isEnd: false,
+        location: offisLocation, // Show map for scan
+        qrCode: 'Q2_FORSCHER',
+        answers: null,
+        nextNodeOnScan: 'q3_2_2_question'
+    },
+    // --- PATH 3 (Final Questions before End) ---
+    q3_1_1_question: { // Tüftler
+        id: 'q3_1_1_question',
+        question: 'Was klingt spannender für dich?',
+        flowLabel: 'Frage 3 (Tüftler)',
+        isEnd: false,
+        location: null, // No map
+        qrCode: null,
+        answers: [
+            { text: 'Roboter in der Produktion programmieren', nextNodeId: 'end_produktion' },
+            { text: 'KI für sichere Energiesysteme entwickeln', nextNodeId: 'end_energie' },
+        ],
+    },
+    q3_1_2_question: { // Planer
+        id: 'q3_1_2_question',
+        question: 'Was klingt spannender für dich?',
+        flowLabel: 'Frage 3 (Planer)',
+        isEnd: false,
+        location: null, // No map
+        qrCode: null,
+        answers: [
+            { text: 'Stromnetze der Zukunft mitgestalten', nextNodeId: 'end_energie' },
+            { text: 'An nachhaltigen Fertigungssystemen für die Industrie arbeiten', nextNodeId: 'end_produktion' },
+        ],
+    },
+    q3_2_1_question: { // Helfer
+        id: 'q3_2_1_question',
+        question: 'Was klingt spannender für dich?',
+        flowLabel: 'Frage 3 (Helfer)',
+        isEnd: false,
+        location: null, // No map
+        qrCode: null,
+        answers: [
+            { text: 'IT-Systeme für Pflegeeinrichtungen bauen', nextNodeId: 'end_gesundheit' },
+            { text: 'Medizinische Daten auswerten, um Therapien zu verbessern', nextNodeId: 'end_gesundheit' },
+        ],
+    },
+    q3_2_2_question: { // Forscher
+        id: 'q3_2_2_question',
+        question: 'Was klingt spannender für dich?',
+        flowLabel: 'Frage 3 (Forscher)',
+        isEnd: false,
+        location: null, // No map
+        qrCode: null,
+        answers: [
+            { text: 'KI und Menschen besser zusammenarbeiten lassen', nextNodeId: 'end_gesellschaft' },
+            { text: 'Menschen durch virtuelle Umgebungen miteinander verbinden', nextNodeId: 'end_gesellschaft' },
+        ],
+    },
+    // --- End Nodes ---
+    end_produktion: {
+        id: 'end_produktion',
+        isEnd: true,
+        flowLabel: 'Ergebnis: Produktion',
+        resultText: 'Zu dir passt vermutlich am besten dieser Bereich im OFFIS: Produktion',
+    },
+    end_energie: {
+        id: 'end_energie',
+        isEnd: true,
+        flowLabel: 'Ergebnis: Energie',
+        resultText: 'Zu dir passt vermutlich am besten dieser Bereich im OFFIS: Energie',
+    },
+    end_gesundheit: {
+        id: 'end_gesundheit',
+        isEnd: true,
+        flowLabel: 'Ergebnis: Gesundheit',
+        resultText: 'Zu dir passt vermutlich am besten dieser Bereich im OFFIS: Gesundheit',
+    },
+    end_gesellschaft: {
+        id: 'end_gesellschaft',
+        isEnd: true,
+        flowLabel: 'Ergebnis: Gesellschaft',
+        resultText: 'Zu dir passt vermutlich am besten dieser Bereich im OFFIS: Gesellschaft',
+    },
 };
 
 // Helper to shorten text for node labels
@@ -147,87 +235,76 @@ const shortenText = (text, maxLength = 50) => {
 const generateFullFlowData = (pathTaken, treeData) => {
     const nodes = [];
     const edges = [];
-
-    // Simple position mapping for a basic tree layout
+    
+    // Define positions for a clearer layout
     const positions = {
-        start: { x: 400, y: 0 },
-        trees_1: { x: 200, y: 150 },
-        waste_1: { x: 600, y: 150 },
-        trees_2: { x: 200, y: 300 },
-        waste_2: { x: 600, y: 300 },
-        trees_end_garden: { x: 0, y: 450 },
-        trees_end_insects: { x: 400, y: 450 },
-        waste_end_recycling: { x: 400, y: 450 }, // This might overlap, adjust if needed
-        waste_end_compost: { x: 800, y: 450 },
+        start:              { x: 450, y: 0 },
+        q1_question:        { x: 450, y: 120 },
+        q1_scan_tech:       { x: 250, y: 240 },
+        q1_scan_mensch:     { x: 650, y: 240 },
+        q2_1_question:      { x: 250, y: 360 },
+        q2_2_question:      { x: 650, y: 360 },
+        q2_scan_tueftler:   { x: 50, y: 480 },
+        q2_scan_planer:     { x: 300, y: 480 },
+        q2_scan_helfer:     { x: 550, y: 480 },
+        q2_scan_forscher:   { x: 800, y: 480 },
+        q3_1_1_question:    { x: 50, y: 600 },
+        q3_1_2_question:    { x: 300, y: 600 },
+        q3_2_1_question:    { x: 550, y: 600 },
+        q3_2_2_question:    { x: 800, y: 600 },
+        end_produktion:     { x: 175, y: 720 },
+        end_energie:        { x: 175, y: 840 },
+        end_gesundheit:     { x: 675, y: 720 },
+        end_gesellschaft:   { x: 675, y: 840 },
     };
 
-    // Create nodes for the entire tree
     for (const nodeId in treeData) {
         const nodeInfo = treeData[nodeId];
         const label = nodeInfo.flowLabel || nodeInfo.question || nodeId;
-        const shortLabel = shortenText(label);
-
         const isInPath = pathTaken.includes(nodeId);
 
         nodes.push({
             id: nodeId,
-            position: positions[nodeId] || { x: 0, y: 0 }, // Use predefined positions or default
-            data: { label: shortLabel },
-            type: nodeInfo.isEnd ? 'output' : 'default',
+            position: positions[nodeId] || { x: Math.random() * 400, y: Math.random() * 400 },
+            data: { label: shortenText(label, 25) },
+            type: nodeInfo.isEnd ? 'output' : (nodeInfo.answers ? 'default' : 'input'),
             style: {
-                opacity: isInPath ? 1 : 0.3, // Reduce opacity for nodes not in path
-                border: isInPath ? '1px solid #1a192b' : '1px dashed #a0a0a0', // Change border for clarity
+                opacity: isInPath ? 1 : 0.4,
+                border: isInPath ? '2px solid #2c3e50' : '1px solid #ccc',
+                minWidth: '150px',
+                fontSize: '0.9em',
             }
         });
     }
 
-    // Create edges for the entire tree, highlighting the path taken
     for (const nodeId in treeData) {
         const nodeInfo = treeData[nodeId];
 
-        // Edges from answers
+        const createEdge = (sourceId, targetId, label, isScan) => {
+            const isEdgeInPath = pathTaken.indexOf(sourceId) > -1 && pathTaken[pathTaken.indexOf(sourceId) + 1] === targetId;
+            return {
+                id: `e-${sourceId}-${targetId}`,
+                source: sourceId,
+                target: targetId,
+                label: shortenText(label, 20),
+                animated: isEdgeInPath,
+                style: {
+                    stroke: isEdgeInPath ? '#2c3e50' : '#ccc',
+                    opacity: isEdgeInPath ? 1 : 0.5,
+                },
+            };
+        };
+
         if (nodeInfo.answers) {
             nodeInfo.answers.forEach(answer => {
-                const targetId = answer.nextNodeId;
-                const edgeId = `e-${nodeId}-${targetId}`;
-                const isEdgeInPath = pathTaken.indexOf(nodeId) !== -1 && pathTaken[pathTaken.indexOf(nodeId) + 1] === targetId;
-
-                 edges.push({
-                    id: edgeId,
-                    source: nodeId,
-                    target: targetId,
-                    label: shortenText(answer.text, 15), // Shorten edge label
-                    animated: isEdgeInPath, // Animate edges in the path
-                    style: {
-                        stroke: isEdgeInPath ? '#1a192b' : '#a0a0a0', // Change color for edges not in path
-                        opacity: isEdgeInPath ? 1 : 0.3, // Reduce opacity
-                    },
-                    type: 'default', // Or 'step', 'smoothstep'
-                 });
+                edges.push(createEdge(nodeId, answer.nextNodeId, answer.text, false));
             });
         }
 
-        // Edge from QR scan
         if (nodeInfo.nextNodeOnScan) {
-             const targetId = nodeInfo.nextNodeOnScan;
-             const edgeId = `e-${nodeId}-${targetId}`;
-             const isEdgeInPath = pathTaken.indexOf(nodeId) !== -1 && pathTaken[pathTaken.indexOf(nodeId) + 1] === targetId;
-
-              edges.push({
-                id: edgeId,
-                source: nodeId,
-                target: targetId,
-                label: 'QR Scan',
-                animated: isEdgeInPath,
-                 style: {
-                     stroke: isEdgeInPath ? '#1a192b' : '#a0a0a0',
-                     opacity: isEdgeInPath ? 1 : 0.3,
-                 },
-                type: 'default',
-              });
+            edges.push(createEdge(nodeId, nodeInfo.nextNodeOnScan, 'QR Scan', true));
         }
     }
-
     return { nodes, edges };
 };
 
@@ -237,28 +314,22 @@ function ChangeMapView({ coords }) {
   const map = useMap();
   useEffect(() => {
     if (coords) {
-      map.setView(coords, 15);
+      map.setView(coords, 17); // Zoom in a bit more
     }
   }, [coords, map]);
   return null;
 }
 
 function MapDisplay({ location }) {
-  if (!location || !location.coords) {
-    return null;
-  }
+  if (!location || !location.coords) return null;
 
   const position = location.coords;
-  const locationName = location.name || 'Nächster Ort';
-  const geoUri = `geo:${position[0]},${position[1]}?q=${position[0]},${position[1]}(${encodeURIComponent(locationName)})`;
-  const osmUrl = `https://www.openstreetmap.org/directions?to=${position[0]},${position[1]}`;
+  const locationName = location.name;
+  const osmUrl = `https://www.openstreetmap.org/?mlat=${position[0]}&mlon=${position[1]}#map=18/${position[0]}/${position[1]}`;
 
   return (
-    <div
-      style={{ height: '256px' }}
-      className="w-full rounded-lg overflow-hidden shadow-md my-4 border border-gray-300"
-    >
-      <MapContainer center={position} zoom={15} scrollWheelZoom={true} style={{ height: '100%', width: '100%' }}>
+    <div style={{ height: '200px', marginBottom: '16px' }} className="w-full rounded-lg overflow-hidden shadow-lg border-2 border-gray-300">
+      <MapContainer center={position} zoom={17} scrollWheelZoom={true} style={{ height: '100%', width: '100%' }}>
         <TileLayer
           attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
@@ -266,12 +337,8 @@ function MapDisplay({ location }) {
         <Marker position={position}>
           <Popup>
             {locationName}.<br />
-            <a href={geoUri} target="_blank" rel="noopener noreferrer" className="leaflet-popup-content a">
-              Route hierhin starten (Mobil)
-            </a>
-            <br />
-             <a href={osmUrl} target="_blank" rel="noopener noreferrer" className="leaflet-popup-content a mt-1 inline-block">
-              Route auf OpenStreetMap zeigen
+            <a href={osmUrl} target="_blank" rel="noopener noreferrer">
+              Auf OpenStreetMap ansehen
             </a>
           </Popup>
         </Marker>
@@ -281,84 +348,51 @@ function MapDisplay({ location }) {
   );
 }
 
-// --- MODIFIED QRScanner Component ---
 function QRScanner({ expectedCode, onScanSuccess }) {
   const [error, setError] = useState('');
-  const scannerRef = useRef(null);
-  const readerId = "qr-code-reader";
-  const readerContainerRef = useRef(null);
-
+  const readerId = "qr-code-reader-element";
+  
   useEffect(() => {
-    let localScannerInstance = null;
+    const scanner = new Html5QrcodeScanner(
+      readerId, 
+      { fps: 10, qrbox: { width: 250, height: 250 }, rememberLastUsedCamera: true },
+      false // verbose
+    );
 
-    const cleanupScanner = () => {
-        const instance = scannerRef.current;
-        if (instance) {
-            try {
-                if (instance.getState && instance.getState() === 2 /* SCANNING */) {
-                    instance.clear()
-                        .catch(err => console.error("QRScanner: Cleanup - Error clearing scanner (async):", err));
-                }
-            } catch (err) {
-                console.warn("QRScanner: Cleanup - Sync error checking scanner state or clearing:", err);
-            }
-            scannerRef.current = null;
+    const successCallback = (decodedText, decodedResult) => {
+        if (decodedText === expectedCode) {
+            setError('');
+            scanner.clear().catch(error => console.error("Failed to clear scanner.", error));
+            onScanSuccess();
+        } else {
+            setError(`Falscher QR-Code gescannt. Erwartet: ${expectedCode}`);
         }
     };
 
-    if (expectedCode && readerContainerRef.current) {
-        cleanupScanner();
-        setError('');
-
-        const config = {
-            fps: 10,
-            qrbox: { width: 250, height: 250 },
-            rememberLastUsedCamera: true,
-        };
-
-        const successCallback = (decodedText, decodedResult) => {
-            if (decodedText === expectedCode) {
-                setError('');
-                onScanSuccess();
-            } else {
-                setError(`Falscher QR-Code gescannt. Erwartet: ${expectedCode}, Erhalten: ${decodedText}`);
-            }
-        };
-
-        const errorCallback = (errorMessage) => { };
-
-        try {
-            const html5QrcodeScanner = new Html5QrcodeScanner(readerId, config, false);
-            scannerRef.current = html5QrcodeScanner;
-            localScannerInstance = html5QrcodeScanner;
-            html5QrcodeScanner.render(successCallback, errorCallback);
-        } catch (initError) {
-             console.error(`QRScanner: Error during scanner init or render call for ${expectedCode}:`, initError);
-             setError("Fehler beim Initialisieren des Scanners.");
-             if (scannerRef.current === localScannerInstance) {
-                scannerRef.current = null;
-             }
-        }
-    } else {
-        cleanupScanner();
-    }
+    const errorCallback = (errorMessage) => {
+      // console.warn(errorMessage);
+    };
+    
+    scanner.render(successCallback, errorCallback);
 
     return () => {
-        cleanupScanner();
+      // Cleanup function to clear the scanner
+      const anElement = document.getElementById(readerId);
+      if (anElement) {
+        scanner.clear().catch(error => {
+            if (!error.message.includes("not found")) {
+                console.error("Failed to clear html5QrcodeScanner: ", error);
+            }
+        });
+      }
     };
-
-  }, [expectedCode, onScanSuccess, readerId]);
-
-  if (!expectedCode) {
-    return null;
-  }
+  }, [expectedCode, onScanSuccess]);
 
   return (
-    <div className="mt-6 p-4 border border-gray-300 rounded-lg shadow-sm bg-gray-50">
-      <h3 className="text-lg font-semibold mb-2 text-gray-700">QR-Code Scan</h3>
-      <p className="text-sm text-gray-600 mb-3">Richte deine Kamera auf den QR-Code.</p>
-      <div ref={readerContainerRef} id={readerId} style={{ width: '100%', minHeight: '250px' }}></div>
-      {error && <p className="text-red-500 text-sm mt-2">{error}</p>}
+    <div className="mt-6 p-4 border-2 border-dashed border-gray-400 rounded-lg shadow-inner" style={{backgroundColor: '#34495E'}}>
+      <h3 className="text-lg font-semibold mb-2 text-white text-center">Nächster Schritt: QR-Code Scannen</h3>
+      <div id={readerId} style={{ width: '100%', minHeight: '250px' }}></div>
+      {error && <p className="text-red-400 bg-red-900 p-2 rounded-md text-sm mt-2 text-center">{error}</p>}
     </div>
   );
 }
@@ -370,161 +404,128 @@ function App() {
   const [pathTaken, setPathTaken] = useState(['start']);
   const [message, setMessage] = useState('');
   const [gameStarted, setGameStarted] = useState(false);
+  const { width, height } = useWindowSize();
+
+  const currentNode = useMemo(() => decisionTree[currentNodeId], [currentNodeId]);
 
   useEffect(() => {
-     if (!gameStarted) {
-         setCurrentNodeId('start');
-         setPathTaken(['start']);
-         setMessage('');
-     }
+      if (!gameStarted) {
+          setCurrentNodeId('start');
+          setPathTaken(['start']);
+          setMessage('');
+      }
   }, [gameStarted]);
-
-  const currentNode = decisionTree[currentNodeId];
+  
+  const advanceToNode = useCallback((nextNodeId) => {
+      if (decisionTree[nextNodeId]) {
+          setCurrentNodeId(nextNodeId);
+          setPathTaken(prevPath => [...prevPath, nextNodeId]);
+          setMessage('');
+      } else {
+          setMessage('Fehler: Nächster Schritt nicht gefunden.');
+      }
+  }, []);
 
   const handleAnswer = (nextNodeId) => {
-    setMessage('');
-    const nextNode = decisionTree[nextNodeId];
-    if (nextNode) {
-      setCurrentNodeId(nextNodeId);
-      setPathTaken(prevPath => [...prevPath, nextNodeId]);
-    } else {
-      setMessage('Ein Fehler ist aufgetreten. Node nicht gefunden.');
-    }
+      advanceToNode(nextNodeId);
   };
 
-   const handleScanSuccess = useCallback(() => {
-      const current = decisionTree[currentNodeId];
-      if (!current) {
-          setMessage('Fehler: Interner Statusfehler nach Scan.');
-          return;
-      }
-      setMessage('QR-Code erfolgreich gescannt! Lade nächsten Schritt...');
-      const nextNodeId = current.nextNodeOnScan;
+  const handleScanSuccess = useCallback(() => {
+      setMessage('QR-Code erfolgreich gescannt!');
+      setTimeout(() => advanceToNode(currentNode.nextNodeOnScan), 500);
+  }, [currentNode, advanceToNode]);
 
-      if (nextNodeId && decisionTree[nextNodeId]) {
-          requestAnimationFrame(() => {
-              setCurrentNodeId(nextNodeId);
-              setPathTaken(prevPath => [...prevPath, nextNodeId]);
-              setMessage('');
-          });
-      } else {
-          setMessage('Ein Fehler ist aufgetreten. Nächster Schritt nach Scan nicht gefunden.');
-      }
-   }, [currentNodeId]);
+  const startGame = () => setGameStarted(true);
+  const restartGame = () => setGameStarted(false);
 
-  const startGame = () => {
-    setGameStarted(true);
+  const handleMouseDown = (e) => {
+    const button = e.currentTarget;
+    button.style.setProperty('--x', `${e.clientX - button.getBoundingClientRect().left}px`);
+    button.style.setProperty('--y', `${e.clientY - button.getBoundingClientRect().top}px`);
   };
 
-  const restartGame = () => {
-    setGameStarted(false);
-  };
+  const { nodes, edges } = useMemo(() => {
+      return currentNode?.isEnd ? generateFullFlowData(pathTaken, decisionTree) : { nodes: [], edges: [] };
+  }, [currentNode, pathTaken]);
 
-  // --- Render Introduction Screen ---
   if (!gameStarted) {
-      return (
-        <div className="main-app-container introduction-screen">
-            <h1>Willkommen zur Umwelt-Rallye!</h1>
-            <h2>Entdecke Oldenburg und lerne!</h2>
-            <p>
-                Hallo Entdecker! 👋 Bei dieser Rallye folgst du einem Pfad durch Oldenburg.
-                Du beantwortest Fragen oder scannst QR-Codes, um zum nächsten Ort zu gelangen.
-                So lernst du spielerisch etwas über Umweltthemen wie Bäume und Müllvermeidung.
-                Am Ende siehst du deinen Weg - viel Spaß beim Gestalten deiner eigenen Visualisierung!
-            </p>
-            <p>Bist du bereit, loszulegen?</p>
-            <button onClick={startGame} className="start-button">
-                Spiel starten!
-            </button>
-             <footer style={{ textAlign: 'center', fontSize: '0.75rem', color: '#6b7280', marginTop: '32px' }}>
-                 Entwickelt von Felix Wehrmann (Wirtschaftsinformatik Student, Uni Oldenburg/OFFIS) mit Project IDX, React & Leaflet.
-             </footer>
-        </div>
-      );
+    return (
+      <div className="main-app-container introduction-screen">
+          <h1>Willkommen zur OFFIS-Entdeckertour!</h1>
+          <h2>Finde heraus, was zu dir passt!</h2>
+          <p>
+              Hallo Entdecker! 👋 Bei dieser interaktiven Tour scannst du QR-Codes und beantwortest Fragen,
+              um herauszufinden, welcher Forschungsbereich am OFFIS am besten zu dir passen könnte.
+              Dein Weg durch die Entscheidungen wird am Ende visualisiert.
+          </p>
+          <button onClick={startGame} onMouseDown={handleMouseDown} className="start-button">
+              <span className="button-text">Tour starten!</span>
+          </button>
+           <footer style={{ textAlign: 'center', fontSize: '0.75rem', color: 'white', marginTop: '32px' }}>
+                Entwickelt mit Project IDX, React & Leaflet.
+           </footer>
+      </div>
+    );
   }
 
-  // --- Render Main Game / Result Screen ---
   if (!currentNode) {
     return (
         <div className="main-app-container text-center">
-            <div className="p-4 text-red-600">Fehler: Kritischer Spielstandfehler (Ungültige Node ID: {currentNodeId}). Bitte das Spiel neu starten.</div>
-            <button onClick={restartGame} className="answer-button" style={{ backgroundColor: '#ef4444', marginTop: '1rem' }}>
-                Zurück zum Start
+            <div className="p-4 text-red-600">Fehler: Kritischer Spielstandfehler. Bitte starte die Anwendung neu.</div>
+            <button onClick={restartGame} onMouseDown={handleMouseDown} className="answer-button" style={{ backgroundColor: '#ef4444', marginTop: '1rem' }}>
+                <span className="button-text">Zurück zum Start</span>
             </button>
         </div>
     );
   }
-
-    // Generate flow data when game ends
-  const { nodes, edges } = currentNode.isEnd ? generateFullFlowData(pathTaken, decisionTree) : { nodes: [], edges: [] };
-
+  
   return (
     <div className="main-app-container">
-
       {message && (
-        <div
-           style={{
-              padding: '12px', marginBottom: '16px', borderRadius: '4px', textAlign: 'center',
-              fontSize: '0.875rem', fontWeight: 500,
-              color: message.includes('Fehler') ? '#991b1b' : '#166534',
-              backgroundColor: message.includes('Fehler') ? '#fef2f2' : '#f0fdf4'
-           }}
-           role="alert"
-        >
+        <div style={{ padding: '12px', marginBottom: '16px', borderRadius: '4px', textAlign: 'center', color: 'white', backgroundColor: '#2C3E50' }} role="alert">
           {message}
         </div>
       )}
 
       {currentNode.isEnd ? (
-         // --- RESULT BOX ---
-         <div className="result-box">
-            <h2 style={{ fontSize: '1.25rem', fontWeight: 600, color: '#4338ca', marginBottom: '12px' }}>Geschafft! 🎉</h2>
-            <p style={{ color: '#374151', marginBottom: '16px' }}>{currentNode.resultText}</p>
-
-            {/* Render DecisionTreeFlow component */}
-            <DecisionTreeFlow nodes={nodes} edges={edges} />
-
-            <div style={{ marginTop: '24px', padding: '15px', backgroundColor: '#f3f4f6', borderRadius: '6px', fontSize: '0.9rem', color: '#4b5563' }}>
-              <h4 style={{ fontWeight: 'bold', marginBottom: '8px' }}>Was ist ein Entscheidungsbaum?</h4>
-              <p>Ein Entscheidungsbaum ist wie eine Schatzkarte mit vielen Wegen. An jeder Kreuzung wählst du einen Weg basierend auf einer Antwort. Das hier ist der Pfad, den du gewählt hast. Jetzt kannst du deine eigene, tolle Visualisierung dafür bauen!</p>
-            </div>
-
-            <button onClick={restartGame} className="start-button" style={{ backgroundColor: '#3b82f6' }}>
-                Nochmal spielen
-            </button>
+        <div className="result-box" style={{ display: 'flex', flexDirection: 'column', height: 'calc(100vh - 100px)', justifyContent: 'space-around', alignItems: 'center' }}>
+          <h2 style={{ fontSize: '1.5rem', color: 'white', textAlign: 'center' }}>Geschafft! 🎉</h2>
+          <p style={{ fontSize: '1.2rem', color: 'white', textAlign: 'center', margin: '0 1rem' }}>{currentNode.resultText}</p>
+          <DecisionTreeFlow nodes={nodes} edges={edges} />
+          <div style={{ padding: '15px', backgroundColor: '#34495E', borderRadius: '6px', fontSize: '0.9rem', color: 'white', textAlign: 'center' }}>
+            <h4 style={{ fontWeight: 'bold', marginBottom: '8px' }}>Dein Weg zum Ergebnis</h4>
+            <p>Dies ist der Pfad, der dich zu deinem Ergebnis geführt hat. Probiere es doch nochmal aus und entdecke andere Bereiche!</p>
+          </div>
+          <button onClick={restartGame} onMouseDown={handleMouseDown} className="start-button" style={{ backgroundColor: '#3b82f6' }}>
+              <span className="button-text">Nochmal spielen</span>
+          </button>
+          <Confetti width={width} height={height} recycle={false} numberOfPieces={300} gravity={0.15} />
         </div>
       ) : (
-        // --- CONTENT BOX (Question/Map/Answers/Scanner) ---
         <div className="content-box">
-          {currentNode.question && (
-             <h2 style={{ fontSize: '1.125rem', fontWeight: 600, marginBottom: '16px', color: '#1f2937' }}>{currentNode.question}</h2>
-          )}
-
+          {/* MapDisplay is now only rendered if currentNode.location exists */}
           <MapDisplay location={currentNode.location} />
-
-          {currentNode.answers && Array.isArray(currentNode.answers) && currentNode.answers.length > 0 && (
-             <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginTop: '16px' }}>
+          
+          {currentNode.question && <h2 style={{ fontSize: '1.25rem', fontWeight: 600, marginBottom: '16px', color: 'white', textAlign: 'center' }}>{currentNode.question}</h2>}
+          
+          {currentNode.answers && (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginTop: '16px' }}>
               {currentNode.answers.map((answer, index) => (
-                <button
-                  key={index}
-                  onClick={() => handleAnswer(answer.nextNodeId)}
-                  className="answer-button"
-                >
-                  {answer.text}
+                <button key={index} onClick={() => handleAnswer(answer.nextNodeId)} onMouseDown={handleMouseDown} className="answer-button">
+                  <span className="button-text">{answer.text}</span>
                 </button>
               ))}
             </div>
           )}
 
-           {currentNode.qrCode && (
-               <QRScanner
-                 expectedCode={currentNode.qrCode}
-                 onScanSuccess={handleScanSuccess}
-               />
-            )}
+          {currentNode.qrCode && (
+            <QRScanner
+              expectedCode={currentNode.qrCode}
+              onScanSuccess={handleScanSuccess}
+            />
+          )}
         </div>
       )}
-
     </div>
   );
 }
