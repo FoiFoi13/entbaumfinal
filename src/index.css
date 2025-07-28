@@ -73,13 +73,13 @@ button:active {
 @media (prefers-color-scheme: light) {
   :root {
     color: white; /* Always white text in light mode too */
-    background-color: #E6F0F8; /* Light Blue */
+    background-color: #2C3E50; /* Dark Blue */
   }
   a:hover {
-    color: #5D8FD1;
+    color: #6A9CDC;
   }
   button {
-    background-color: #A3C3E1; /* Light blue for buttons */
+    background-color: #34495E; /* Dark blue for buttons */
   }
 }
 
