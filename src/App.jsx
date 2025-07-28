@@ -218,6 +218,46 @@ const shortenText = (text, maxLength = 50) => {
     return text.substring(0, maxLength - 3) + '...';
 };
 
+// Helper to find all reachable end nodes from a given start node
+const findAllReachableEndNodes = (startNodeId, tree) => {
+    const reachableEndNodes = new Set();
+    const visited = new Set();
+    const queue = [startNodeId];
+
+    while (queue.length > 0) {
+        const currentNodeId = queue.shift();
+
+        if (visited.has(currentNodeId)) {
+            continue;
+        }
+        visited.add(currentNodeId);
+
+        const node = tree[currentNodeId];
+        if (!node) {
+            continue;
+        }
+
+        if (node.isEnd) {
+            reachableEndNodes.add(currentNodeId);
+            continue;
+        }
+
+        if (node.answers) {
+            node.answers.forEach(answer => {
+                if (!visited.has(answer.nextNodeId)) {
+                    queue.push(answer.nextNodeId);
+                }
+            });
+        }
+        if (node.nextNodeOnScan) {
+            if (!visited.has(node.nextNodeOnScan)) {
+                queue.push(node.nextNodeOnScan);
+            }
+        }
+    }
+    return Array.from(reachableEndNodes);
+};
+
 const generateFullFlowData = (pathTaken, treeData) => {
     const nodes = [];
     const edges = [];
@@ -364,6 +404,15 @@ function App() {
   const { width, height } = useWindowSize();
 
   const currentNode = useMemo(() => decisionTree[currentNodeId], [currentNodeId]);
+  const [remainingEndLocations, setRemainingEndLocations] = useState(0);
+
+  // Calculate remaining end locations whenever currentNodeId changes
+  useEffect(() => {
+    if (currentNodeId) {
+      const reachable = findAllReachableEndNodes(currentNodeId, decisionTree);
+      setRemainingEndLocations(reachable.length);
+    }
+  }, [currentNodeId]);
 
   useEffect(() => {
       if (!gameStarted) {
@@ -426,6 +475,13 @@ function App() {
   return (
     <div className="main-app-container">
       {message && <div className="message-banner" role="alert">{message}</div>}
+
+      {/* Display the counter */} 
+      {!currentNode.isEnd && (
+          <div className="end-locations-counter">
+              Verbleibende Endpunkte: {remainingEndLocations}
+          </div>
+      )}
 
       {currentNode.isEnd ? (
         <div className="result-box">
