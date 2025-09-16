@@ -10,10 +10,10 @@
     "build": "vite build",
     "lint": "eslint .",
     "preview": "vite preview"
-    
   },
   "homepage": "https://FoiFoi13.github.io/entbaumfinal/",
   "dependencies": {
+    "dagre": "^0.8.5",
     "framer-motion": "^12.9.7",
     "html5-qrcode": "^2.3.8",
     "leaflet": "^1.9.4",

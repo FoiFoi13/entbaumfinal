@@ -1,221 +1,218 @@
-import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { useWindowSize } from 'react-use';
 import Confetti from 'react-confetti';
 import { Html5QrcodeScanner } from 'html5-qrcode';
 import 'leaflet/dist/leaflet.css';
-import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
-import L from 'leaflet';
-
-import markerIcon2x from 'leaflet/dist/images/marker-icon-2x.png';
-import markerIcon from 'leaflet/dist/images/marker-icon.png';
-import markerShadow from 'leaflet/dist/images/marker-shadow.png';
-
 import DecisionTreeFlow from './DecisionTreeFlow';
 
-delete L.Icon.Default.prototype._getIconUrl;
-
-L.Icon.Default.mergeOptions({
-    iconRetinaUrl: markerIcon2x,
-    iconUrl: markerIcon,
-    shadowUrl: markerShadow,
-});
-
-const offisLocation = { name: 'OFFIS Institut für Informatik', coords: [53.148881112034466, 8.200026064858008] };
-
-// --- FINAL Decision Tree with Info Texts ---
 const decisionTree = {
-    // START
     start: {
         id: 'start',
-        question: 'Willkommen zur OFFIS-Entdeckertour! Bitte gehe zum Haupteingang und scanne den QR-Code, um zu beginnen.',
-        flowLabel: 'Start @ OFFIS',
+        question: 'Interessiert dich primär die digitale Welt (also alles, was mit Computern, Code und VR zu tun hat) ODER eher die physische und natürliche Welt (Experimente, Natur, Handwerk)?',
+        flowLabel: 'Start',
         isEnd: false,
-        location: offisLocation,
-        qrCode: 'OFFIS_START_2024',
-        answers: null,
-        nextNodeOnScan: 'q1_question'
-    },
-    // Question/Scan nodes... (Rest remains unchanged)
-    q1_question: {
-        id: 'q1_question',
-        question: 'Was interessiert dich mehr?',
-        flowLabel: 'Frage 1: Interesse',
-        isEnd: false,
-        location: null,
-        qrCode: null,
         answers: [
-            { text: 'Technik und Strom', nextNodeId: 'q1_scan_tech' },
-            { text: 'Menschen und ihr Alltag', nextNodeId: 'q1_scan_mensch' },
-        ],
-    },
-    q1_scan_tech: {
-        id: 'q1_scan_tech',
-        question: 'Gute Wahl! Scanne nun den QR-Code für den Bereich "Technik".',
-        flowLabel: 'Scan: Technik',
-        isEnd: false,
-        location: offisLocation,
-        qrCode: 'Q1_TECHNIK',
-        answers: null,
-        nextNodeOnScan: 'q2_1_question'
-    },
-    q1_scan_mensch: {
-        id: 'q1_scan_mensch',
-        question: 'Interessant! Scanne nun den QR-Code für den Bereich "Mensch".',
-        flowLabel: 'Scan: Mensch',
-        isEnd: false,
-        location: offisLocation,
-        qrCode: 'Q1_MENSCH',
-        answers: null,
-        nextNodeOnScan: 'q2_2_question'
-    },
-    q2_1_question: {
-        id: 'q2_1_question',
-        question: 'Woran arbeitest du am liebsten?',
-        flowLabel: 'Frage 2 (Technik)',
-        isEnd: false,
-        location: null,
-        qrCode: null,
-        answers: [
-            { text: 'Ich tüftle gern an Maschinen oder Software', nextNodeId: 'q2_scan_tueftler' },
-            { text: 'Ich plane gern Systeme, Netzwerke oder Prozesse', nextNodeId: 'q2_scan_planer' },
-        ],
-    },
-    q2_scan_tueftler: {
-        id: 'q2_scan_tueftler',
-        question: 'Verstanden, du bist ein Tüftler! Scanne den nächsten QR-Code.',
-        flowLabel: 'Scan: Tüftler',
-        isEnd: false,
-        location: offisLocation,
-        qrCode: 'Q2_TUEFTLER',
-        answers: null,
-        nextNodeOnScan: 'q3_1_1_question'
-    },
-    q2_scan_planer: {
-        id: 'q2_scan_planer',
-        question: 'Verstanden, du bist ein Planer! Scanne den nächsten QR-Code.',
-        flowLabel: 'Scan: Planer',
-        isEnd: false,
-        location: offisLocation,
-        qrCode: 'Q2_PLANER',
-        answers: null,
-        nextNodeOnScan: 'q3_1_2_question'
-    },
-    q2_2_question: {
-        id: 'q2_2_question',
-        question: 'Woran arbeitest du am liebsten?',
-        flowLabel: 'Frage 2 (Mensch)',
-        isEnd: false,
-        location: null,
-        qrCode: null,
-        answers: [
-            { text: 'Ich will helfen, das Leben älterer oder kranker Menschen zu verbessern', nextNodeId: 'q2_scan_helfer' },
-            { text: 'Ich interessiere mich für die Auswirkungen von Digitalisierung auf die Gesellschaft', nextNodeId: 'q2_scan_forscher' },
-        ],
-    },
-    q2_scan_helfer: {
-        id: 'q2_scan_helfer',
-        question: 'Eine wichtige Aufgabe! Scanne den nächsten QR-Code.',
-        flowLabel: 'Scan: Helfer',
-        isEnd: false,
-        location: offisLocation,
-        qrCode: 'Q2_HELFER',
-        answers: null,
-        nextNodeOnScan: 'q3_2_1_question'
-    },
-    q2_scan_forscher: {
-        id: 'q2_scan_forscher',
-        question: 'Ein spannendes Feld! Scanne den nächsten QR-Code.',
-        flowLabel: 'Scan: Forscher',
-        isEnd: false,
-        location: offisLocation,
-        qrCode: 'Q2_FORSCHER',
-        answers: null,
-        nextNodeOnScan: 'q3_2_2_question'
-    },
-    q3_1_1_question: {
-        id: 'q3_1_1_question',
-        question: 'Was klingt spannender für dich?',
-        flowLabel: 'Frage 3 (Tüftler)',
-        isEnd: false,
-        location: null,
-        qrCode: null,
-        answers: [
-            { text: 'Roboter in der Produktion programmieren', nextNodeId: 'end_produktion' },
-            { text: 'KI für sichere Energiesysteme entwickeln', nextNodeId: 'end_energie' },
-        ],
-    },
-    q3_1_2_question: {
-        id: 'q3_1_2_question',
-        question: 'Was klingt spannender für dich?',
-        flowLabel: 'Frage 3 (Planer)',
-        isEnd: false,
-        location: null,
-        qrCode: null,
-        answers: [
-            { text: 'Stromnetze der Zukunft mitgestalten', nextNodeId: 'end_energie' },
-            { text: 'An nachhaltigen Fertigungssystemen für die Industrie arbeiten', nextNodeId: 'end_produktion' },
-        ],
-    },
-    q3_2_1_question: {
-        id: 'q3_2_1_question',
-        question: 'Was klingt spannender für dich?',
-        flowLabel: 'Frage 3 (Helfer)',
-        isEnd: false,
-        location: null,
-        qrCode: null,
-        answers: [
-            { text: 'IT-Systeme für Pflegeeinrichtungen bauen', nextNodeId: 'end_gesundheit' },
-            { text: 'Medizinische Daten auswerten, um Therapien zu verbessern', nextNodeId: 'end_gesundheit' },
-        ],
-    },
-    q3_2_2_question: {
-        id: 'q3_2_2_question',
-        question: 'Was klingt spannender für dich?',
-        flowLabel: 'Frage 3 (Forscher)',
-        isEnd: false,
-        location: null,
-        qrCode: null,
-        answers: [
-            { text: 'KI und Menschen besser zusammenarbeiten lassen', nextNodeId: 'end_gesellschaft' },
-            { text: 'Menschen durch virtuelle Umgebungen miteinander verbinden', nextNodeId: 'end_gesellschaft' },
+            { text: 'Digitale Welt', nextNodeId: 'scan_path_a' },
+            { text: 'Physische / Natürliche Welt', nextNodeId: 'scan_path_b' },
         ],
     },
 
-    // --- End Nodes with Descriptions ---
-    end_produktion: {
-        id: 'end_produktion',
-        isEnd: true,
-        flowLabel: 'Ergebnis: Produktion',
-        resultText: 'Zu dir passt vermutlich am besten der Bereich Produktion.',
-        description: 'In diesem Bereich dreht sich alles um die Fabrik der Zukunft (Industrie 4.0). Hier wird erforscht, wie Roboter, KI und vernetzte Maschinen zusammenarbeiten, um Produktionsprozesse intelligenter, flexibler und nachhaltiger zu gestalten.'
+    // --- SCAN NODES ---
+    scan_path_a: {
+        id: 'scan_path_a',
+        question: 'Super! Finde jetzt den Stand für "Digitale Welt" und scanne den QR-Code, um fortzufahren.',
+        flowLabel: 'Scan: Digitale Welt',
+        isEnd: false,
+        qrCode: 'AHOI_MINT_PATH_A',
+        nextNodeOnScan: 'q_a1',
     },
-    end_energie: {
-        id: 'end_energie',
-        isEnd: true,
-        flowLabel: 'Ergebnis: Energie',
-        resultText: 'Zu dir passt vermutlich am besten der Bereich Energie.',
-        description: 'Dieser Bereich beschäftigt sich mit der digitalen Zukunft unserer Energieversorgung. Im Fokus stehen intelligente Stromnetze (Smart Grids), die Integration erneuerbarer Energien und die Entwicklung von IT-Lösungen für eine stabile Energiewende.'
+    scan_path_b: {
+        id: 'scan_path_b',
+        question: 'Klasse! Finde jetzt den Stand für "Physische/Natürliche Welt" und scanne den QR-Code.',
+        flowLabel: 'Scan: Physische Welt',
+        isEnd: false,
+        qrCode: 'AHOI_MINT_PATH_B',
+        nextNodeOnScan: 'q_b1',
     },
-    end_gesundheit: {
-        id: 'end_gesundheit',
-        isEnd: true,
-        flowLabel: 'Ergebnis: Gesundheit',
-        resultText: 'Zu dir passt vermutlich am besten der Bereich Gesundheit.',
-        description: 'Hier steht die Digitalisierung des Gesundheitswesens im Mittelpunkt. Es werden IT-Systeme für Kliniken und die Pflege entwickelt, an Lösungen für ein selbstbestimmtes Leben im Alter geforscht und medizinische Daten zur Verbesserung von Therapien analysiert.'
+     scan_a2: {
+        id: 'scan_a2',
+        question: 'Gute Wahl! Scanne den "Erschaffen"-Code.',
+        flowLabel: 'Scan: Erschaffen',
+        isEnd: false,
+        qrCode: 'AHOI_MINT_ERSCHAFFEN',
+        nextNodeOnScan: 'q_a2',
     },
-    end_gesellschaft: {
-        id: 'end_gesellschaft',
-        isEnd: true,
-        flowLabel: 'Ergebnis: Gesellschaft',
-        resultText: 'Zu dir passt vermutlich am besten der Bereich Gesellschaft.',
-        description: 'In diesem Bereich wird untersucht, wie die Digitalisierung unser Leben und Zusammenarbeiten verändert. Themen sind die Interaktion zwischen Mensch und KI, die Gestaltung smarter Städte (Smart City) und der Einsatz von virtuellen Umgebungen (VR/AR).'
+     scan_a3: {
+        id: 'scan_a3',
+        question: 'Gute Wahl! Scanne den "Erleben"-Code.',
+        flowLabel: 'Scan: Erleben',
+        isEnd: false,
+        qrCode: 'AHOI_MINT_ERLEBEN',
+        nextNodeOnScan: 'q_a3',
     },
-};
+     scan_b2: {
+        id: 'scan_b2',
+        question: 'Fast da! Scanne den Code für "Wissenschaft & Technik".',
+        flowLabel: 'Scan: Wissenschaft',
+        isEnd: false,
+        qrCode: 'AHOI_MINT_WISSENSCHAFT',
+        nextNodeOnScan: 'q_b2',
+    },
 
-const shortenText = (text, maxLength = 50) => {
-    if (!text) return '';
-    if (text.length <= maxLength) return text;
-    return text.substring(0, maxLength - 3) + '...';
+
+    // --- QUESTION NODES (Paths) ---
+    // Path A
+    q_a1: {
+        id: 'q_a1',
+        question: 'Möchtest du lieber selbst aktiv etwas erschaffen, programmieren oder steuern ODER möchtest du lieber digitale Welten erleben, spielen und konsumieren?',
+        flowLabel: 'Pfad A',
+        isEnd: false,
+        answers: [
+            { text: 'Selbst aktiv erschaffen/programmieren', nextNodeId: 'scan_a2' },
+            { text: 'Erleben, spielen, eintauchen', nextNodeId: 'scan_a3' },
+        ],
+    },
+    q_a2: {
+        id: 'q_a2',
+        question: 'Geht es dir dabei hauptsächlich um Roboter (also Dinge, die sich bewegen und Befehle ausführen) ODER eher um Code, digitale Gestaltung und Elektronik?',
+        flowLabel: 'A.2',
+        isEnd: false,
+        answers: [
+            { text: 'Ja, Roboter sind super!', nextNodeId: 'end_roboter' },
+            { text: 'Nein, lieber Code & digitale Werkstatt!', nextNodeId: 'end_code' },
+        ],
+    },
+    q_a3: {
+        id: 'q_a3',
+        question: 'Möchtest du gezielt eine VR-Brille (Virtual Reality) aufsetzen, um komplett in eine andere Welt einzutauchen?',
+        flowLabel: 'A.3',
+        isEnd: false,
+        answers: [
+            { text: 'Ja, ich will VR erleben!', nextNodeId: 'end_vr' },
+            { text: 'Nein, lieber andere digitale Erlebnisse und Spiele.', nextNodeId: 'end_digital_art' },
+        ],
+    },
+    // Path B
+    q_b1: {
+        id: 'q_b1',
+        question: 'Geht es dir mehr um das Entdecken der Natur (Tiere, Pflanzen, Umwelt, Weltall) ODER mehr um klassische Wissenschaft (Physik, Chemie, Mathe) und technische Experimente?',
+        flowLabel: 'Pfad B',
+        isEnd: false,
+        answers: [
+            { text: 'Natur & Umwelt entdecken!', nextNodeId: 'end_natur' },
+            { text: 'Klassische Wissenschaft & Technik-Experimente!', nextNodeId: 'scan_b2' },
+        ],
+    },
+    q_b2: {
+        id: 'q_b2',
+        question: 'Möchtest du dich primär über Studium & Beruf informieren ODER lieber selbst experimentieren und etwas Handwerkliches/Technisches ausprobieren?',
+        flowLabel: 'B.2',
+        isEnd: false,
+        answers: [
+            { text: 'Ich will mich über meine Zukunft (Beruf/Studium) informieren.', nextNodeId: 'end_zukunft' },
+            { text: 'Ich will selbst experimentieren und werkeln!', nextNodeId: 'end_labor' },
+        ],
+    },
+    // --- ENDPOINTS ---
+    end_roboter: {
+        id: 'end_roboter',
+        isEnd: true,
+        flowLabel: 'Endpunkt 1',
+        resultText: 'ENDPUNKT 1: "Die Roboter-Werkstatt"',
+        description: `
+Broetje-Automation: Interagiere mit einem Industrie-Cobot.
+Bildungsregion Friesland: Programmiere kleine Bluebots und Ozobots.
+Innovationszentrum: Baue und steuere LEGO-Roboter.
+Robotikzentrum JadeBay: Programmiere den mobilen Roboter iRobot Root.
+Hochschule Emden-Leer: Steuere den Roboterhund "HELDog".
+`
+    },
+    end_code: {
+        id: 'end_code',
+        isEnd: true,
+        flowLabel: 'Endpunkt 2',
+        resultText: 'ENDPUNKT 2: "Code, Print & Make"',
+        description: `
+BZTG: Programmiere einen Arduino nano für Lichteffekte.
+BTC AG: Programmiere den BTC-Hamster (und informiere dich über IT-Berufe).
+Kreativität trifft Technik: Lerne löten, mit Scratch programmieren und sieh den Lasercutter.
+Anna Schwarz RomnoKher: Sieh dir Drucktechniken an, die mit CNC, 3D-Drucker und Lasercutter erstellt wurden.
+Robotikzentrum JadeBay: Probiere den 3D-Druck-Stift aus.
+OFFIS e.V.: Löse Rätsel am interaktiven Logikboard.
+`
+    },
+    end_vr: {
+        id: 'end_vr',
+        isEnd: true,
+        flowLabel: 'Endpunkt 3',
+        resultText: 'ENDPUNKT 3: "Virtual Reality Welten"',
+        description: `
+Agentur für Arbeit: Berufsorientierung mit VR-Brille.
+EWE AG: Virtuelle Führungen durch technische Anlagen.
+Innovationszentrum: Tauche in virtuelle Spielwelten ein.
+OFFIS e.V.: Spiele "Türme von Hanoi" in der virtuellen Welt.
+(Tipp: Auch bei FutureNow! (Pfad B) gibt es VR zum Klimawandel).
+`
+    },
+    end_digital_art: {
+        id: 'end_digital_art',
+        isEnd: true,
+        flowLabel: 'Endpunkt 4',
+        resultText: 'ENDPUNKT 4: "Digital Art, Games & History"',
+        description: `
+CEWE: Erstelle Fotos mithilfe von Künstlicher Intelligenz.
+Stadtbibliothek: Mache Fotos von dir vor dem Greenscreen.
+Oldenburger Computer-Museum: Erlebe die Geschichte der Datenträger an Retro-Computern.
+Weiss Pharmatechnik: Spiele das interaktive Partikelfangspiel.
+XperimenT!-Schulen: Nimm an der großen MINT-Olympiade (mit Knobel- und Programmier-Aufgaben) teil.
+ROCKID.one: Entdecke digitale Bildung durch Gamification.
+`
+    },
+    end_natur: {
+        id: 'end_natur',
+        isEnd: true,
+        flowLabel: 'Endpunkt 5',
+        resultText: 'ENDPUNKT 5: "Die Naturforscher-Station"',
+        description: `
+Uni Oldenburg (ICBM): Erforsche "Munition im Meer".
+FutureNow! / AWI: Verstehe den Klimawandel (Experimente mit Eis, Arktis-Fotos).
+Landesmuseum Natur und Mensch: Entdecke die Vielfalt der Insekten (und probiere Snacks).
+MOBILUM (NABU): Erlebe die heimische Flora und Fauna.
+Nationalpark-Haus & UNESCO: Lerne alles über das Wattenmeer.
+OOWV: Entdecke Spannendes rund um das Thema Wasser.
+Ländliche Erwachsenenbildung: Beobachte die Sonne im Tiny Observatorium.
+Oldenburgische Landschaft: Mach beim Naturkieker-Quiz mit.
+`
+    },
+    end_zukunft: {
+        id: 'end_zukunft',
+        isEnd: true,
+        flowLabel: 'Endpunkt 6',
+        resultText: 'ENDPUNKT 6: "Deine Zukunft in MINT"',
+        description: `
+Agentur für Arbeit: Generelle Berufsorientierung.
+BTC AG: Infos zu Ausbildung und Dualem Studium in der IT.
+EWE AG: Einblicke in technische Ausbildungsberufe.
+Uni Oldenburg (OLELA): Alles über das Lehramtsstudium.
+Hochschule Emden-Leer: Infos zum Niedersachsentechnikum und MINT-Studiengängen.
+(Tipp: Auch die Uni-Institute für Physik, Chemie, Mathe informieren über ihre Studiengänge!)
+`
+    },
+    end_labor: {
+        id: 'end_labor',
+        isEnd: true,
+        flowLabel: 'Endpunkt 7',
+        resultText: 'ENDPUNKT 7: "Das Forscher-Labor"',
+        description: `
+Uni Oldenburg (Physik): Experimente zu Atomen und Kosmos.
+Uni Oldenburg (Chemie): Mach beim "Fisch-Drucken" mit und probiere Stickstoffeis.
+Uni Oldenburg (Mathematik): Experimentiere mit Seifenhäuten.
+Hochschule Emden-Leer: Verstehe Physik mit dem "Schokoladenschiffsantrieb", extrahiere DNA oder spiele das XXL-Widerstands-Spiel.
+EWE AG: Baue kleine Windräder oder teste den Schweißsimulator.
+Jade Hochschule (Hörtechnik): Mache Hörversuche und teste deine Ohren.
+Oldenburgische Landschaft: Gestalte dein eigenes Glaskunstwerk.
+`
+    },
 };
 
 // Helper to find all reachable end nodes from a given start node
@@ -258,262 +255,288 @@ const findAllReachableEndNodes = (startNodeId, tree) => {
     return Array.from(reachableEndNodes);
 };
 
-const generateFullFlowData = (pathTaken, treeData) => {
-    const nodes = [];
-    const edges = [];
-    const baseNodeWidth = 160;
-    const horizontalGap = 20;
-    const verticalGap = 100;
-    const centerX = 150;
 
-    const positions = {
-        start:              { x: centerX, y: 0 * verticalGap },
-        q1_question:        { x: centerX, y: 1 * verticalGap },
-        q1_scan_tech:       { x: centerX - (baseNodeWidth/2 + horizontalGap/2), y: 2 * verticalGap },
-        q1_scan_mensch:     { x: centerX + (baseNodeWidth/2 + horizontalGap/2), y: 2 * verticalGap },
-        q2_1_question:      { x: centerX - (baseNodeWidth/2 + horizontalGap/2), y: 3 * verticalGap },
-        q2_2_question:      { x: centerX + (baseNodeWidth/2 + horizontalGap/2), y: 3 * verticalGap },
-        q2_scan_tueftler:   { x: centerX - (baseNodeWidth + horizontalGap), y: 4 * verticalGap },
-        q2_scan_planer:     { x: centerX, y: 4 * verticalGap },
-        q2_scan_helfer:     { x: centerX, y: 4 * verticalGap },
-        q2_scan_forscher:   { x: centerX + (baseNodeWidth + horizontalGap), y: 4 * verticalGap },
-        q3_1_1_question:    { x: centerX - (baseNodeWidth + horizontalGap), y: 5 * verticalGap },
-        q3_1_2_question:    { x: centerX, y: 5 * verticalGap },
-        q3_2_1_question:    { x: centerX, y: 5 * verticalGap },
-        q3_2_2_question:    { x: centerX + (baseNodeWidth + horizontalGap), y: 5 * verticalGap },
-        end_produktion:     { x: centerX - 80, y: 6 * verticalGap },
-        end_energie:        { x: centerX + 80, y: 6 * verticalGap },
-        end_gesundheit:     { x: centerX - 80, y: 6 * verticalGap },
-        end_gesellschaft:   { x: centerX + 80, y: 6 * verticalGap },
-    };
+import dagre from 'dagre';
 
-    for (const nodeId in treeData) {
-        const nodeInfo = treeData[nodeId];
-        const label = nodeInfo.flowLabel || nodeInfo.question || nodeId;
-        const isInPath = pathTaken.includes(nodeId);
+const getLayoutedElements = (treeData, pathTaken) => {
+    const dagreGraph = new dagre.graphlib.Graph();
+    dagreGraph.setDefaultEdgeLabel(() => ({}));
+    dagreGraph.setGraph({ rankdir: 'TB', nodesep: 40, ranksep: 100 });
 
-        nodes.push({
-            id: nodeId,
-            position: positions[nodeId],
-            data: { label: shortenText(label, 25) },
-            type: nodeInfo.isEnd ? 'output' : (nodeInfo.answers ? 'default' : 'input'),
-            style: {
-                opacity: isInPath ? 1 : 0.5,
-                border: isInPath ? '2px solid #2c3e50' : '1px solid #ccc',
-                width: baseNodeWidth,
-                fontSize: '11px',
-                textAlign: 'center',
-            }
-        });
+    const nodeWidth = 220;
+    const nodeHeight = 100;
+
+    const nodesForFlow = [];
+    const edgesForFlow = [];
+
+    // Filter for relevant nodes to draw: questions, scan prompts, and endpoints
+    const relevantNodeIds = new Set(['start']);
+    const queue = ['start'];
+    while(queue.length > 0) {
+        const nodeId = queue.shift();
+        const node = treeData[nodeId];
+        if(!node) continue;
+
+        if(node.answers) {
+            node.answers.forEach(ans => {
+                if(!relevantNodeIds.has(ans.nextNodeId)) {
+                    relevantNodeIds.add(ans.nextNodeId);
+                    queue.push(ans.nextNodeId);
+                }
+            });
+        }
+        if(node.nextNodeOnScan) {
+             if(!relevantNodeIds.has(node.nextNodeOnScan)) {
+                relevantNodeIds.add(node.nextNodeOnScan);
+                queue.push(node.nextNodeOnScan);
+             }
+        }
     }
 
-    for (const nodeId in treeData) {
-        const nodeInfo = treeData[nodeId];
-        const createEdge = (sourceId, targetId, label) => {
-            const isEdgeInPath = pathTaken.includes(sourceId) && pathTaken.includes(targetId);
-            return {
-                id: `e-${sourceId}-${targetId}`,
+
+    Object.values(treeData).forEach(nodeInfo => {
+        // Only draw nodes that are part of the main flow
+        if (!relevantNodeIds.has(nodeInfo.id) && !nodeInfo.isEnd) {
+            // Make sure endpoints are always included
+            let isReachable = false;
+            for(const id of relevantNodeIds) {
+                if(findAllReachableEndNodes(id, treeData).includes(nodeInfo.id)) {
+                    isReachable = true;
+                    break;
+                }
+            }
+            if(!isReachable) return;
+        }
+
+
+        const label = nodeInfo.question;
+        const isInPath = pathTaken.includes(nodeInfo.id);
+
+        dagreGraph.setNode(nodeInfo.id, { width: nodeWidth, height: nodeHeight });
+
+        nodesForFlow.push({
+            id: nodeInfo.id,
+            data: { label: label },
+            position: { x: 0, y: 0 },
+            type: nodeInfo.isEnd ? 'output' : (nodeInfo.id === 'start' ? 'input' : 'default'),
+            style: {
+                width: nodeWidth,
+                textAlign: 'center',
+                fontSize: '12px',
+                opacity: isInPath ? 1 : 0.6,
+                border: isInPath ? '2px solid #004494' : '1px solid #ccc',
+                background: isInPath ? '#e6f0ff' : (nodeInfo.qrCode ? '#fffbe6' : '#ffffff'),
+                whiteSpace: 'pre-wrap',
+            }
+        });
+
+        const connectNodes = (sourceId, targetId, edgeLabel = '') => {
+             const isEdgeInPath = pathTaken.includes(sourceId) && pathTaken.includes(targetId);
+             edgesForFlow.push({
+                id: `e-${sourceId}-${targetId}-${edgeLabel.replace(/\s/g, '')}`,
                 source: sourceId,
                 target: targetId,
-                label: shortenText(label, 15),
+                type: 'custom',
+                data: { label: edgeLabel },
                 animated: isEdgeInPath,
-                style: {
-                    stroke: isEdgeInPath ? '#2c3e50' : '#ccc',
-                    opacity: isEdgeInPath ? 1 : 0.6,
-                },
-            };
-        };
+            });
+            dagreGraph.setEdge(sourceId, targetId);
+        }
 
         if (nodeInfo.answers) {
             nodeInfo.answers.forEach(answer => {
-                edges.push(createEdge(nodeId, answer.nextNodeId, answer.text));
+                connectNodes(nodeInfo.id, answer.nextNodeId, answer.text)
             });
         }
         if (nodeInfo.nextNodeOnScan) {
-            edges.push(createEdge(nodeId, nodeInfo.nextNodeOnScan, 'QR Scan'));
+            connectNodes(nodeInfo.id, nodeInfo.nextNodeOnScan, '✅ Scan erfolgreich');
         }
-    }
-    return { nodes, edges };
+    });
+
+    dagre.layout(dagreGraph);
+
+    const layoutedNodes = nodesForFlow.map(node => {
+        const nodeWithPosition = dagreGraph.node(node.id);
+        if(nodeWithPosition){
+            node.position = {
+                x: nodeWithPosition.x - nodeWidth / 2,
+                y: nodeWithPosition.y - nodeHeight / 2,
+            };
+        }
+        return node;
+    });
+
+    return { nodes: layoutedNodes, edges: edgesForFlow };
 };
 
-function ChangeMapView({ coords }) {
-  const map = useMap();
-  useEffect(() => { if (coords) map.setView(coords, 17) }, [coords, map]);
-  return null;
-}
-
-function MapDisplay({ location }) {
-  if (!location || !location.coords) return null;
-  const position = location.coords;
-  const osmUrl = `https://www.openstreetmap.org/?mlat=${position[0]}&mlon=${position[1]}#map=18/${position[0]}/${position[1]}`;
-
-  return (
-    <div style={{ height: '200px', marginBottom: '16px' }} className="w-full rounded-lg overflow-hidden shadow-lg border-2 border-gray-300">
-      <MapContainer center={position} zoom={17} scrollWheelZoom={true} style={{ height: '100%', width: '100%' }}>
-        <TileLayer attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>' url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
-        <Marker position={position}>
-          <Popup>{location.name}.<br /><a href={osmUrl} target="_blank" rel="noopener noreferrer">Auf Karte ansehen</a></Popup>
-        </Marker>
-        <ChangeMapView coords={position} />
-      </MapContainer>
-    </div>
-  );
-}
 
 function QRScanner({ expectedCode, onScanSuccess }) {
-  const readerId = "qr-reader";
-  const [error, setError] = useState('');
-  
-  useEffect(() => {
-    const html5QrcodeScanner = new Html5QrcodeScanner(
-        readerId, { fps: 10, qrbox: { width: 250, height: 250 } }, false);
+    const readerId = "qr-reader";
+    const [error, setError] = useState('');
 
-    function onScanSuccessCb(decodedText, decodedResult) {
-        if (decodedText === expectedCode) {
-            html5QrcodeScanner.clear();
-            onScanSuccess();
-        } else {
-            setError(`Falscher QR-Code gescannt.`);
+    useEffect(() => {
+        const html5QrcodeScanner = new Html5QrcodeScanner(
+            readerId, { fps: 10, qrbox: { width: 250, height: 250 } }, false);
+
+        function onScanSuccessCb(decodedText, decodedResult) {
+            if (decodedText === expectedCode) {
+                html5QrcodeScanner.clear();
+                onScanSuccess();
+            } else {
+                setError(`Falscher QR-Code gescannt. Erwartet: ${expectedCode}`);
+            }
         }
-    }
+        
+        // Wrap render in a timeout to ensure element is in the DOM
+        const timeoutId = setTimeout(() => {
+            const scannerElement = document.getElementById(readerId);
+            if(scannerElement && !html5QrcodeScanner.isScanning) {
+               html5QrcodeScanner.render(onScanSuccessCb, (errorMessage) => { });
+            }
+        }, 100);
 
-    html5QrcodeScanner.render(onScanSuccessCb, (errorMessage) => {});
 
-    return () => {
-        const scannerElement = document.getElementById(readerId);
-        if (scannerElement) {
-           html5QrcodeScanner.clear().catch(err => console.error("Error clearing scanner on unmount", err));
-        }
-    };
-  }, [expectedCode, onScanSuccess]);
+        return () => {
+            clearTimeout(timeoutId);
+            // Ensure scanner is active before trying to clear
+            if (html5QrcodeScanner && html5QrcodeScanner.isScanning) {
+                 html5QrcodeScanner.clear().catch(err => console.error("Error clearing scanner on unmount", err));
+            }
+        };
+    }, [expectedCode, onScanSuccess]);
 
-  return (
-    <div className="mt-6 p-4 border-2 border-dashed border-gray-400 rounded-lg" style={{backgroundColor: '#34495E'}}>
-      <h3 className="text-lg font-semibold mb-2 text-white text-center">Nächster Schritt: QR-Code Scannen</h3>
-      <div id={readerId} style={{ width: '100%' }}></div>
-      {error && <p className="text-red-400 bg-red-900 p-2 rounded-md text-sm mt-2 text-center">{error}</p>}
-    </div>
-  );
+    return (
+        <div className="mt-6 p-4 border-2 border-dashed border-gray-400 rounded-lg" style={{ backgroundColor: '#34495E' }}>
+            <h3 className="text-lg font-semibold mb-2 text-white text-center">Nächster Schritt: QR-Code Scannen</h3>
+            <div id={readerId} style={{ width: '100%' }}></div>
+            {error && <p className="text-red-400 bg-red-900 p-2 rounded-md text-sm mt-2 text-center">{error}</p>}
+        </div>
+    );
 }
 
+
 function App() {
-  const [currentNodeId, setCurrentNodeId] = useState('start');
-  const [pathTaken, setPathTaken] = useState(['start']);
-  const [message, setMessage] = useState('');
-  const [gameStarted, setGameStarted] = useState(false);
-  const { width, height } = useWindowSize();
+    const [currentNodeId, setCurrentNodeId] = useState('start');
+    const [pathTaken, setPathTaken] = useState(['start']);
+    const [message, setMessage] = useState('');
+    const [gameStarted, setGameStarted] = useState(false);
+    const { width, height } = useWindowSize();
 
-  const currentNode = useMemo(() => decisionTree[currentNodeId], [currentNodeId]);
-  const [remainingEndLocations, setRemainingEndLocations] = useState(0);
+    const currentNode = useMemo(() => decisionTree[currentNodeId], [currentNodeId]);
+    const [remainingEndLocations, setRemainingEndLocations] = useState(0);
 
-  // Calculate remaining end locations whenever currentNodeId changes
-  useEffect(() => {
-    if (currentNodeId) {
-      const reachable = findAllReachableEndNodes(currentNodeId, decisionTree);
-      setRemainingEndLocations(reachable.length);
+    useEffect(() => {
+        if (currentNodeId) {
+            const reachable = findAllReachableEndNodes(currentNodeId, decisionTree);
+            setRemainingEndLocations(reachable.length);
+        }
+    }, [currentNodeId]);
+
+    useEffect(() => {
+        if (!gameStarted) {
+            setCurrentNodeId('start');
+            setPathTaken(['start']);
+            setMessage('');
+        }
+    }, [gameStarted]);
+
+    const advanceToNode = useCallback((nextNodeId) => {
+        if (decisionTree[nextNodeId]) {
+            setCurrentNodeId(nextNodeId);
+            setPathTaken(prevPath => [...new Set([...prevPath, nextNodeId])]);
+            setMessage('');
+        } else {
+            setMessage('Fehler: Nächster Schritt nicht gefunden.');
+        }
+    }, []);
+
+    const handleAnswer = (nextNodeId) => advanceToNode(nextNodeId);
+    const handleScanSuccess = useCallback(() => {
+        if (currentNode && currentNode.nextNodeOnScan) {
+            setMessage('QR-Code erfolgreich gescannt!');
+            setTimeout(() => advanceToNode(currentNode.nextNodeOnScan), 300);
+        }
+    }, [currentNode, advanceToNode]);
+
+    const startGame = () => setGameStarted(true);
+    const restartGame = () => {
+        setGameStarted(false);
+        setCurrentNodeId('start');
+        setPathTaken(['start']);
     }
-  }, [currentNodeId]);
 
-  useEffect(() => {
-      if (!gameStarted) {
-          setCurrentNodeId('start');
-          setPathTaken(['start']);
-          setMessage('');
-      }
-  }, [gameStarted]);
-  
-  const advanceToNode = useCallback((nextNodeId) => {
-      if (decisionTree[nextNodeId]) {
-          setCurrentNodeId(nextNodeId);
-          setPathTaken(prevPath => [...new Set([...prevPath, nextNodeId])]);
-          setMessage('');
-      } else {
-          setMessage('Fehler: Nächster Schritt nicht gefunden.');
-      }
-  }, []);
+    const handleMouseDown = (e) => {
+        const button = e.currentTarget;
+        button.style.setProperty('--x', `${e.clientX - button.getBoundingClientRect().left}px`);
+        button.style.setProperty('--y', `${e.clientY - button.getBoundingClientRect().top}px`);
+    };
 
-  const handleAnswer = (nextNodeId) => advanceToNode(nextNodeId);
-  const handleScanSuccess = useCallback(() => {
-      setMessage('QR-Code erfolgreich gescannt!');
-      setTimeout(() => advanceToNode(currentNode.nextNodeOnScan), 300);
-  }, [currentNode, advanceToNode]);
+    const { nodes, edges } = useMemo(() => {
+        return getLayoutedElements(decisionTree, pathTaken)
+    }, [pathTaken]);
 
-  const startGame = () => setGameStarted(true);
-  const restartGame = () => setGameStarted(false);
-
-  const handleMouseDown = (e) => {
-    const button = e.currentTarget;
-    button.style.setProperty('--x', `${e.clientX - button.getBoundingClientRect().left}px`);
-    button.style.setProperty('--y', `${e.clientY - button.getBoundingClientRect().top}px`);
-  };
-
-  const { nodes, edges } = useMemo(() => {
-      return currentNode?.isEnd ? generateFullFlowData(pathTaken, decisionTree) : { nodes: [], edges: [] };
-  }, [currentNode, pathTaken]);
-
-  if (!gameStarted) {
-    return (
-      <div className="main-app-container introduction-screen">
-          <h1>Willkommen zur OFFIS-Entdeckertour!</h1>
-          <h2>Finde heraus, was zu dir passt!</h2>
-          <p>Hallo! Bei dieser interaktiven Tour scannst du QR-Codes und beantwortest Fragen, um herauszufinden, welcher Forschungsbereich am OFFIS am besten zu dir passen könnte. Dein Weg wird am Ende visualisiert.</p>
-          <button onClick={startGame} onMouseDown={handleMouseDown} className="start-button"><span className="button-text">Tour starten!</span></button>
-           <footer style={{ textAlign: 'center', fontSize: '0.75rem', color: 'white', marginTop: '32px' }}>Entwickelt mit Project IDX, React & Leaflet.</footer>
-      </div>
-    );
-  }
-
-  if (!currentNode) {
-    return (
-        <div className="main-app-container text-center">
-            <div className="p-4 text-red-600">Kritischer Fehler. Bitte starte die Anwendung neu.</div>
-            <button onClick={restartGame} className="answer-button mt-4">Zurück zum Start</button>
-        </div>
-    );
-  }
-  
-  return (
-    <div className="main-app-container">
-      {message && <div className="message-banner" role="alert">{message}</div>}
-
-      {/* Display the counter */} 
-      {!currentNode.isEnd && (
-          <div className="end-locations-counter">
-              Verbleibende Endpunkte: {remainingEndLocations}
-          </div>
-      )}
-
-      {currentNode.isEnd ? (
-        <div className="result-box">
-          <h2 className="result-title">Geschafft! 🎉</h2>
-          <p className="result-text">{currentNode.resultText}</p>
-          
-          {/* Added description paragraph */}
-          <p className="result-description">{currentNode.description}</p>
-          
-          <DecisionTreeFlow nodes={nodes} edges={edges} />
-          
-          <button onClick={restartGame} onMouseDown={handleMouseDown} className="start-button"><span className="button-text">Nochmal spielen</span></button>
-          <Confetti width={width} height={height} recycle={false} numberOfPieces={250} gravity={0.15} />
-        </div>
-      ) : (
-        <div className="content-box">
-          <MapDisplay location={currentNode.location} />
-          {currentNode.question && <h2 className="question-title">{currentNode.question}</h2>}
-          {currentNode.answers && (
-            <div className="answers-container">
-              {currentNode.answers.map((answer, index) => (
-                <button key={index} onClick={() => handleAnswer(answer.nextNodeId)} onMouseDown={handleMouseDown} className="answer-button">
-                  <span className="button-text">{answer.text}</span>
-                </button>
-              ))}
+    if (!gameStarted) {
+        return (
+            <div className="main-app-container introduction-screen">
+                <h1>Willkommen zum AHOI MINT Festival!</h1>
+                <h2>Finde heraus, was dich am meisten begeistert!</h2>
+                <p>Beantworte ein paar Fragen und scanne QR-Codes, um herauszufinden, welche Stände und Experimente am besten zu deinen Interessen passen. Dein Weg wird am Ende visualisiert.</p>
+                <button onClick={startGame} onMouseDown={handleMouseDown} className="start-button"><span className="button-text">Tour starten!</span></button>
+                <footer style={{ textAlign: 'center', fontSize: '0.75rem', color: 'white', marginTop: '32px' }}>Entwickelt mit Project IDX & React.</footer>
             </div>
-          )}
-          {currentNode.qrCode && <QRScanner expectedCode={currentNode.qrCode} onScanSuccess={handleScanSuccess} />}
+        );
+    }
+
+    if (!currentNode) {
+        return (
+            <div className="main-app-container text-center">
+                <div className="p-4 text-red-600">Kritischer Fehler. Bitte starte die Anwendung neu.</div>
+                <button onClick={restartGame} className="answer-button mt-4">Zurück zum Start</button>
+            </div>
+        );
+    }
+
+    return (
+        <div className="main-app-container">
+            {message && <div className="message-banner" role="alert">{message}</div>}
+
+            <div className="end-locations-counter">
+                Verbleibende Endpunkte: {remainingEndLocations}
+            </div>
+
+            {currentNode.isEnd ? (
+                <div className="result-box">
+                    <h2 className="result-title">Geschafft! 🎉</h2>
+                    <p className="result-text">{currentNode.resultText}</p>
+                    <p className="result-description" style={{ whiteSpace: 'pre-wrap' }}>{currentNode.description}</p>
+                    
+                    <h3 className="text-lg font-bold mt-6 mb-2 text-center text-white">Dein Weg durch das Festival:</h3>
+                    <div style={{height: '500px', width: '100%', border: '1px solid #ccc', borderRadius: '8px', background: '#f8f8f8' }}>
+                         <DecisionTreeFlow nodes={nodes} edges={edges} />
+                    </div>
+
+                    <button onClick={restartGame} onMouseDown={handleMouseDown} className="start-button"><span className="button-text">Nochmal spielen</span></button>
+                    <Confetti width={width} height={height} recycle={false} numberOfPieces={250} gravity={0.15} />
+                </div>
+            ) : (
+                <div className="content-box">
+                    {currentNode.question && <h2 className="question-title">{currentNode.question}</h2>}
+                    
+                    {currentNode.answers && (
+                        <div className="answers-container">
+                            {currentNode.answers.map((answer, index) => (
+                                <button key={index} onClick={() => handleAnswer(answer.nextNodeId)} onMouseDown={handleMouseDown} className="answer-button">
+                                    <span className="button-text">{answer.text}</span>
+                                </button>
+                            ))}
+                        </div>
+                    )}
+
+                    {currentNode.qrCode && <QRScanner expectedCode={currentNode.qrCode} onScanSuccess={handleScanSuccess} />}
+                </div>
+            )}
         </div>
-      )}
-    </div>
-  );
+    );
 }
 
 export default App;
