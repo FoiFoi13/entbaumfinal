@@ -9,7 +9,13 @@ const edgeTypes = {
   custom: CustomEdge,
 };
 
-function DecisionTreeFlow({ nodes, edges }) {
+function DecisionTreeFlow({ nodes, edges, onNodeClick }) {
+  const handleNodeClick = (event, node) => {
+    if (onNodeClick) {
+      onNodeClick(node.id);
+    }
+  };
+
   return (
     <div style={{ height: '800px', width: '100%', border: '1px solid #E0E0E0', background: '#f8f9fa' }}>
       <ReactFlow
@@ -20,6 +26,7 @@ function DecisionTreeFlow({ nodes, edges }) {
         fitViewOptions={{ padding: 0.2 }} // Etwas mehr padding für eine bessere Ansicht
         nodesDraggable={false}
         nodesConnectable={false}
+        onNodeClick={handleNodeClick} // Pass the click handler
       >
         <Background />
       </ReactFlow>

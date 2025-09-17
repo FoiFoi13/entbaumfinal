@@ -17,46 +17,51 @@ const decisionTree = {
         ],
     },
 
-    // --- SCAN NODES ---
+    // --- SCAN NODES (TEMPORARILY MODIFIED FOR TESTING) ---
     scan_path_a: {
         id: 'scan_path_a',
-        question: 'Super! Finde jetzt den Stand für "Digitale Welt" und scanne den QR-Code, um fortzufahren.',
+        question: 'QR-Code für "Digitale Welt" übersprungen. Klicke um fortzufahren.',
         flowLabel: 'Scan: Digitale Welt',
         isEnd: false,
-        qrCode: 'AHOI_MINT_PATH_A',
-        nextNodeOnScan: 'q_a1',
+        answers: [
+            { text: 'Weiter zu Digitale Welt', nextNodeId: 'q_a1' },
+        ],
     },
     scan_path_b: {
         id: 'scan_path_b',
-        question: 'Klasse! Finde jetzt den Stand für "Physische/Natürliche Welt" und scanne den QR-Code.',
+        question: 'QR-Code für "Physische/Natürliche Welt" übersprungen. Klicke um fortzufahren.',
         flowLabel: 'Scan: Physische Welt',
         isEnd: false,
-        qrCode: 'AHOI_MINT_PATH_B',
-        nextNodeOnScan: 'q_b1',
+        answers: [
+            { text: 'Weiter zu Physische/Natürliche Welt', nextNodeId: 'q_b1' },
+        ],
     },
      scan_a2: {
         id: 'scan_a2',
-        question: 'Gute Wahl! Scanne den "Erschaffen"-Code.',
+        question: 'QR-Code für "Erschaffen" übersprungen. Klicke um fortzufahren.',
         flowLabel: 'Scan: Erschaffen',
         isEnd: false,
-        qrCode: 'AHOI_MINT_ERSCHAFFEN',
-        nextNodeOnScan: 'q_a2',
+        answers: [
+            { text: 'Weiter zu Erschaffen', nextNodeId: 'q_a2' },
+        ],
     },
      scan_a3: {
         id: 'scan_a3',
-        question: 'Gute Wahl! Scanne den "Erleben"-Code.',
+        question: 'QR-Code für "Erleben" übersprungen. Klicke um fortzufahren.',
         flowLabel: 'Scan: Erleben',
         isEnd: false,
-        qrCode: 'AHOI_MINT_ERLEBEN',
-        nextNodeOnScan: 'q_a3',
+        answers: [
+            { text: 'Weiter zu Erleben', nextNodeId: 'q_a3' },
+        ],
     },
      scan_b2: {
         id: 'scan_b2',
-        question: 'Fast da! Scanne den Code für "Wissenschaft & Technik".',
+        question: 'QR-Code für "Wissenschaft & Technik" übersprungen. Klicke um fortzufahren.',
         flowLabel: 'Scan: Wissenschaft',
         isEnd: false,
-        qrCode: 'AHOI_MINT_WISSENSCHAFT',
-        nextNodeOnScan: 'q_b2',
+        answers: [
+            { text: 'Weiter zu Wissenschaft & Technik', nextNodeId: 'q_b2' },
+        ],
     },
 
 
@@ -285,7 +290,7 @@ const getLayoutedElements = (treeData, pathTaken) => {
                 }
             });
         }
-        if(node.nextNodeOnScan) {
+        if (node.nextNodeOnScan && !node.answers) { // Only add nextNodeOnScan if it's not already handled by answers
              if(!relevantNodeIds.has(node.nextNodeOnScan)) {
                 relevantNodeIds.add(node.nextNodeOnScan);
                 queue.push(node.nextNodeOnScan);
@@ -348,7 +353,7 @@ const getLayoutedElements = (treeData, pathTaken) => {
                 connectNodes(nodeInfo.id, answer.nextNodeId, answer.text)
             });
         }
-        if (nodeInfo.nextNodeOnScan) {
+        if (nodeInfo.nextNodeOnScan && !nodeInfo.answers) { // Only connect if it's a scan node that hasn't been converted to a question node
             connectNodes(nodeInfo.id, nodeInfo.nextNodeOnScan, '✅ Scan erfolgreich');
         }
     });
@@ -465,6 +470,19 @@ function App() {
         setPathTaken(['start']);
     }
 
+    const handleNodeClick = useCallback((nodeId) => {
+        // Only allow clicking on nodes that are part of the current path taken
+        if (pathTaken.includes(nodeId)) {
+            setCurrentNodeId(nodeId);
+            // Truncate the pathTaken array to the clicked node
+            const clickedNodeIndex = pathTaken.indexOf(nodeId);
+            setPathTaken(pathTaken.slice(0, clickedNodeIndex + 1));
+            setMessage(`Zurückgesprungen zu: ${decisionTree[nodeId].flowLabel}`);
+        } else {
+            setMessage('Du kannst nur zu bereits besuchten Knoten zurückspringen.');
+        }
+    }, [pathTaken]);
+
     const handleMouseDown = (e) => {
         const button = e.currentTarget;
         button.style.setProperty('--x', `${e.clientX - button.getBoundingClientRect().left}px`);
@@ -511,8 +529,8 @@ function App() {
                     <p className="result-description" style={{ whiteSpace: 'pre-wrap' }}>{currentNode.description}</p>
                     
                     <h3 className="text-lg font-bold mt-6 mb-2 text-center text-white">Dein Weg durch das Festival:</h3>
-                    <div style={{height: '500px', width: '100%', border: '1px solid #ccc', borderRadius: '8px', background: '#f8f8f8' }}>
-                         <DecisionTreeFlow nodes={nodes} edges={edges} />
+                    <div style={{height: '500px', width: '100%', borderRadius: '8px', background: '#f8f8f8' }}>
+                         <DecisionTreeFlow nodes={nodes} edges={edges} onNodeClick={handleNodeClick} />
                     </div>
 
                     <button onClick={restartGame} onMouseDown={handleMouseDown} className="start-button"><span className="button-text">Nochmal spielen</span></button>
@@ -532,7 +550,7 @@ function App() {
                         </div>
                     )}
 
-                    {currentNode.qrCode && <QRScanner expectedCode={currentNode.qrCode} onScanSuccess={handleScanSuccess} />}
+                    {/* {currentNode.qrCode && <QRScanner expectedCode={currentNode.qrCode} onScanSuccess={handleScanSuccess} />} */}
                 </div>
             )}
         </div>
