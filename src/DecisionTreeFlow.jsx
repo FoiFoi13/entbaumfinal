@@ -1,37 +1,37 @@
+// DecisionTreeFlow.js
+
 import React from 'react';
 import ReactFlow, { Background } from 'reactflow';
 import 'reactflow/dist/style.css';
-import CustomEdge from './CustomEdge';
 
-// KORREKTUR: Definition außerhalb der Komponente.
-// Das behebt die React Flow Warnung "[React Flow]: It looks like you've created a new ... object."
+// Wir definieren einen leeren Edge-Typ, falls du später benutzerdefinierte Kanten benötigst.
 const edgeTypes = {
-  custom: CustomEdge,
+  // custom: CustomEdge, // Beispiel für eine benutzerdefinierte Kante
 };
 
-function DecisionTreeFlow({ nodes, edges, onNodeClick }) {
-  const handleNodeClick = (event, node) => {
-    if (onNodeClick) {
-      onNodeClick(node.id);
-    }
-  };
-
+const DecisionTreeFlow = ({ nodes, edges, onNodeClick }) => {
   return (
-    <div style={{ height: '800px', width: '100%', border: '1px solid #E0E0E0', background: '#f8f9fa' }}>
+    <div style={{ height: '100%', width: '100%' }}>
       <ReactFlow
         nodes={nodes}
         edges={edges}
-        edgeTypes={edgeTypes} // Hier wird das memoized Objekt übergeben
+        onNodeClick={(_, node) => onNodeClick(node.id)}
+        edgeTypes={edgeTypes}
+        // Passt den Graphen automatisch an die Bildschirmgröße an
         fitView
-        fitViewOptions={{ padding: 0.2 }} // Etwas mehr padding für eine bessere Ansicht
-        nodesDraggable={false}
-        nodesConnectable={false}
-        onNodeClick={handleNodeClick} // Pass the click handler
+        // Deaktiviert das Scrollrad-Zoomen, was auf dem Handy oft stört
+        zoomOnScroll={false}
+        // Verhindert versehentliches Verschieben beim Scrollen auf der Seite
+        panOnScroll={false}
+        // Erlaubt das Zoomen mit zwei Fingern
+        zoomOnPinch={true}
+        // Versteckt das "React Flow"-Branding, um Platz zu sparen
+        proOptions={{ hideAttribution: true }}
       >
-        <Background />
+        <Background gap={16} color="#e0e0e0" />
       </ReactFlow>
     </div>
   );
-}
+};
 
 export default DecisionTreeFlow;
