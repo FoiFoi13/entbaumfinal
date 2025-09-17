@@ -11,6 +11,7 @@ const decisionTree = {
         question: 'Interessiert dich primär die digitale Welt (also alles, was mit Computern, Code und VR zu tun hat) ODER eher die physische und natürliche Welt (Experimente, Natur, Handwerk)?',
         flowLabel: 'Start',
         isEnd: false,
+        computerSays: 'Stell dir vor, ich bin ein kluger Detektiv! Zuerst schaue ich ganz genau: Geht es um spannende Dinge, die du am Computer machst, ODER um coole Sachen in der echten Welt, draußen in der Natur oder mit Experimenten?',
         answers: [
             { text: 'Digitale Welt', nextNodeId: 'scan_path_a' },
             { text: 'Physische / Natürliche Welt', nextNodeId: 'scan_path_b' },
@@ -33,7 +34,7 @@ const decisionTree = {
         flowLabel: 'Scan: Physische Welt',
         isEnd: false,
         answers: [
-            { text: 'Weiter zu Physische/Natürliche Welt', nextNodeId: 'q_b1' },
+            { text: 'Weiter zu Physische/Naturliche Welt', nextNodeId: 'q_b1' },
         ],
     },
      scan_a2: {
@@ -72,6 +73,7 @@ const decisionTree = {
         question: 'Möchtest du lieber selbst aktiv etwas erschaffen, programmieren oder steuern ODER möchtest du lieber digitale Welten erleben, spielen und konsumieren?',
         flowLabel: 'Pfad A',
         isEnd: false,
+        computerSays: 'Aha! Der Computer hat gemerkt, du magst die digitale Welt. Jetzt muss ich herausfinden: Bist du ein Macher, der Code schreibt und Roboter steuert? Oder tauchst du lieber ein in Spiele und digitale Welten, die andere erschaffen haben?',
         answers: [
             { text: 'Selbst aktiv erschaffen/programmieren', nextNodeId: 'scan_a2' },
             { text: 'Erleben, spielen, eintauchen', nextNodeId: 'scan_a3' },
@@ -82,6 +84,7 @@ const decisionTree = {
         question: 'Geht es dir dabei hauptsächlich um Roboter (also Dinge, die sich bewegen und Befehle ausführen) ODER eher um Code, digitale Gestaltung und Elektronik?',
         flowLabel: 'A.2',
         isEnd: false,
+        computerSays: 'Super, du bist ein digitaler Macher! Nun überlege ich als Computer: Ist dein Herz für Roboter, die sich bewegen und Befehle ausführen, oder eher für das Erfinden von Programmen und coolen digitalen Bildern und Geräten?',
         answers: [
             { text: 'Ja, Roboter sind super!', nextNodeId: 'end_roboter' },
             { text: 'Nein, lieber Code & digitale Werkstatt!', nextNodeId: 'end_code' },
@@ -92,9 +95,11 @@ const decisionTree = {
         question: 'Möchtest du gezielt eine VR-Brille (Virtual Reality) aufsetzen, um komplett in eine andere Welt einzutauchen?',
         flowLabel: 'A.3',
         isEnd: false,
+        computerSays: 'Verstanden, du bist ein digitaler Entdecker! Jetzt prüfe ich: Willst du eine spezielle Brille aufsetzen, um komplett in eine neue, virtuelle Welt einzutauchen? Oder suchst du andere digitale Abenteuer und Spiele auf Bildschirmen?',
         answers: [
             { text: 'Ja, ich will VR erleben!', nextNodeId: 'end_vr' },
-            { text: 'Nein, lieber andere digitale Erlebnisse und Spiele.', nextNodeId: 'end_digital_art' },
+            { text: 'Nein, lieber andere digitale Erlebnisse und Spiele.',
+             nextNodeId: 'end_digital_art' },
         ],
     },
     // Path B
@@ -103,9 +108,11 @@ const decisionTree = {
         question: 'Geht es dir mehr um das Entdecken der Natur (Tiere, Pflanzen, Umwelt, Weltall) ODER mehr um klassische Wissenschaft (Physik, Chemie, Mathe) und technische Experimente?',
         flowLabel: 'Pfad B',
         isEnd: false,
+        computerSays: 'Okay, du liebst die echte Welt! Jetzt muss ich als Computer überlegen: Bist du ein Naturforscher, der Tiere, Pflanzen und das Weltall erkundet? Oder bist du eher ein Wissenschaftler, der spannende Experimente mit Physik und Chemie macht?',
         answers: [
             { text: 'Natur & Umwelt entdecken!', nextNodeId: 'end_natur' },
-            { text: 'Klassische Wissenschaft & Technik-Experimente!', nextNodeId: 'scan_b2' },
+            { text: 'Klassische Wissenschaft & Technik-Experimente!',
+             nextNodeId: 'scan_b2' },
         ],
     },
     q_b2: {
@@ -113,9 +120,12 @@ const decisionTree = {
         question: 'Möchtest du dich primär über Studium & Beruf informieren ODER lieber selbst experimentieren und etwas Handwerkliches/Technisches ausprobieren?',
         flowLabel: 'B.2',
         isEnd: false,
+        computerSays: 'Großartig, du bist ein Wissenschafts-Fan! Jetzt schaue ich als Computer: Möchtest du mehr darüber erfahren, welche Berufe es in der Wissenschaft gibt und was man studieren kann? Oder willst du lieber direkt loslegen und selbst Dinge ausprobieren und bauen?',
         answers: [
-            { text: 'Ich will mich über meine Zukunft (Beruf/Studium) informieren.', nextNodeId: 'end_zukunft' },
-            { text: 'Ich will selbst experimentieren und werkeln!', nextNodeId: 'end_labor' },
+            { text: 'Ich will mich über meine Zukunft (Beruf/Studium) informieren.',
+             nextNodeId: 'end_zukunft' },
+            { text: 'Ich will selbst experimentieren und werkeln!',
+             nextNodeId: 'end_labor' },
         ],
     },
     // --- ENDPOINTS ---
@@ -497,8 +507,10 @@ function App() {
         return (
             <div className="main-app-container introduction-screen">
                 <h1>Willkommen zum AHOI MINT Festival!</h1>
-                <h2>Finde heraus, was dich am meisten begeistert!</h2>
-                <p>Beantworte ein paar Fragen und scanne QR-Codes, um herauszufinden, welche Stände und Experimente am besten zu deinen Interessen passen. Dein Weg wird am Ende visualisiert.</p>
+                <h2>Lass uns gemeinsam die MINT-Welt entdecken!</h2>
+                <p>Hier machst du Entscheidungen, wie ein Computer einen "Entscheidungsbaum" benutzt. Jede Wahl führt dich zu neuen, spannenden Abenteuern!</p>
+                <p>Achte auf die "verbleibenden Endpunkte" – sie zeigen dir, wie viele verschiedene Wege du noch gehen könntest. Viel Spaß beim Entdecken!</p>
+                <p>Beantworte einfach ein paar Fragen und scanne QR-Codes, um herauszufinden, welche Stände und Experimente am besten zu deinen Interessen passen. Dein Weg wird am Ende sichtbar gemacht!</p>
                 <button onClick={startGame} onMouseDown={handleMouseDown} className="start-button"><span className="button-text">Tour starten!</span></button>
                 <footer style={{ textAlign: 'center', fontSize: '0.75rem', color: 'white', marginTop: '32px' }}>Entwickelt mit Project IDX & React.</footer>
             </div>
@@ -540,6 +552,11 @@ function App() {
                 <div className="content-box">
                     {currentNode.question && <h2 className="question-title">{currentNode.question}</h2>}
                     
+                    {/* Hier wird der computerSays Text angezeigt */}
+                    {currentNode.computerSays && <p className="computer-says-text" style={{ fontSize: '0.9rem', color: '#BDC3C7', marginTop: '10px', marginBottom: '20px', fontStyle: 'italic' }}>
+                        💡 So denkt der Computer: {currentNode.computerSays}
+                    </p>}
+
                     {currentNode.answers && (
                         <div className="answers-container">
                             {currentNode.answers.map((answer, index) => (

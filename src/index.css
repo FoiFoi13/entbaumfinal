@@ -5,7 +5,7 @@
 
   color-scheme: light dark;
   color: white; /* Always white text */
-  background-color: #2C3E50; /* Dark Blue */
+  /* background-color: #2C3E50; /* Dark Blue - Removed, background set on body */
 
   font-synthesis: none;
   text-rendering: optimizeLegibility;
@@ -28,6 +28,12 @@ body {
   place-items: center;
   min-width: 320px;
   min-height: 100vh;
+  /* background-image: url('/comic-background.png'); /* Removed background image */
+  /* background-size: cover; */
+  /* background-position: center; */
+  /* background-repeat: no-repeat; */
+  /* background-attachment: fixed; */
+  background-color: #2C3E50; /* Fallback background color, now primary */
 }
 
 h1 {
@@ -73,7 +79,7 @@ button:active {
 @media (prefers-color-scheme: light) {
   :root {
     color: white; /* Always white text in light mode too */
-    background-color: #2C3E50; /* Dark Blue */
+    /* background-color: #2C3E50; /* Dark Blue - Removed, background set on body */
   }
   a:hover {
     color: #6A9CDC;

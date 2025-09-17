@@ -134,21 +134,30 @@
     font-family: 'Arial', sans-serif;
 }
 
+.introduction-screen {
+    position: relative; /* Keep relative for correct button ripple positioning */
+}
+
+.introduction-screen::before {
+    /* Removed the entire pseudo-element for the overlay */
+}
+
 .introduction-screen h1 {
     font-size: 2.5rem;
-    color: #3498DB; /* Blue for main heading */
+    color: white; /* Weiß für Hauptüberschrift */
     margin-bottom: 20px;
 }
 
 .introduction-screen h2 {
     font-size: 1.8rem;
-    color: #5DADE2; /* Lighter blue */
+    color: #ECF0F1; /* Helles Grau für Unterüberschrift */
     margin-bottom: 15px;
 }
 
 .introduction-screen p {
     font-size: 1.1rem;
     line-height: 1.6;
+    color: #BDC3C7; /* Leicht dunkleres Grau für Textabsätze */
     margin-bottom: 20px;
 }
 
