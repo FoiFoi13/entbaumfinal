@@ -1,4 +1,8 @@
-Entscheidungsbaum am Ende Visualisierung + Infotext(Wofür genutzt, Beispiele)
-QR-Code Scanner
-Aufgaben an der Location für mehr Interaktivität
-4 mögliche Enden
+Standplan
+Standbeschreibung
+Baum passend vorallem für Mobil!!!
+Logo OFFIS
+Feedback Zettel
+QR-Codes entfernen
+Hosten GitHub
+

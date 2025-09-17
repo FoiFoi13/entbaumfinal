@@ -22,6 +22,95 @@ a:hover {
   color: #6A9CDC;
 }
 
+/* In App.css oder index.css einfügen */
+
+.path-display-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 1rem;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.path-step {
+  width: 100%;
+  margin-bottom: 0.5rem;
+}
+
+.path-question {
+  font-size: 0.8rem;
+  color: #a0aec0; /* Grauer Text */
+  text-align: center;
+  margin-bottom: 0.5rem;
+  padding: 0 1rem;
+}
+
+.path-choices {
+  display: flex;
+  justify-content: center;
+  gap: 10px; /* Abstand zwischen den Boxen */
+}
+
+.choice-box {
+  padding: 8px 12px;
+  border-radius: 8px;
+  font-size: 0.9rem;
+  text-align: center;
+  flex: 1;
+  max-width: 150px;
+}
+
+.chosen {
+  border: 2px solid #3b82f6; /* Blauer, dicker Rand */
+  background-color: #dbeafe; /* Hellblauer Hintergrund */
+  color: #1e3a8a; /* Dunkelblauer Text */
+  font-weight: bold;
+}
+
+.unchosen {
+  border: 1px dashed #9ca3af; /* Grauer, gestrichelter Rand */
+  background-color: #f9fafb; /* Sehr heller Hintergrund */
+  color: #6b7280; /* Grauer Text */
+  opacity: 0.8;
+}
+
+.path-arrow {
+  font-size: 1.5rem;
+  color: #9ca3af;
+  text-align: center;
+  margin: 0.25rem 0;
+}
+
+.final-step {
+  margin-top: 1rem;
+  font-weight: bold;
+}
+
+/* In App.css oder index.css ersetzen */
+
+.custom-div-icon {
+  background-color: #007bff;
+  border-radius: 50%;
+  color: white;
+  font-weight: bold;
+  font-size: 12px; /* <-- Schriftart verkleinert */
+  width: 30px;
+  height: 30px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.3);
+  border: 2px solid white;
+}
+
+.long-icon {
+  width: auto;
+  padding: 0 7px; /* <-- Padding leicht angepasst */
+  border-radius: 15px;
+  white-space: nowrap; /* <-- WICHTIG: Verhindert den Textumbruch */
+}
+
 body {
   margin: 0;
   display: flex;
